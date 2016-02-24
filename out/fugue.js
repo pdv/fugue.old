@@ -862,19 +862,26 @@ goog.tagUnsealableClass = function(ctr) {
 };
 goog.UNSEALABLE_CONSTRUCTOR_PROPERTY_ = "goog_defineClass_legacy_unsealable";
 goog.provide("engine");
-engine.node = null;
 engine.audioEngine = function() {
   var audio = {};
   audio.actx = new AudioContext;
-  audio.node = null;
+  audio.nodes = [];
+  audio.out = function(input) {
+    input.connect(this.actx.destination);
+  };
+  audio.gain = function(input, gain) {
+    var gainNode = this.actx.createGain();
+    gainNode.gain.value = gain;
+    input.connect(gainNode);
+    return gainNode;
+  };
   audio.sinosc = function(freq) {
-    var osc = this.actx.createOscillator();
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    this.node = osc;
-    osc.connect(this.actx.destination);
-    osc.start();
+    var oscNode = this.actx.createOscillator();
+    oscNode.type = "sine";
+    oscNode.frequency.value = freq;
+    oscNode.start();
     console.log("playing");
+    return oscNode;
   };
   return audio;
 };
@@ -29950,4 +29957,16 @@ goog.require("engine");
 cljs.core.enable_console_print_BANG_.call(null);
 cljs.core.println.call(null, "Hello world!");
 fugue.core.audio = engine.audioEngine.call(null);
-fugue.core.audio.sinosc(400);
+fugue.core.sin_osc = function fugue$core$sin_osc(freq) {
+  return fugue.core.audio.sinosc(freq);
+};
+fugue.core.gain = function fugue$core$gain(input, gain__$1) {
+  return fugue.core.audio.gain(input, gain__$1);
+};
+fugue.core.out = function fugue$core$out(input) {
+  return fugue.core.audio.out(input);
+};
+fugue.core.beep = function fugue$core$beep() {
+  return fugue.core.out.call(null, fugue.core.gain.call(null, fugue.core.sin_osc.call(null, 240), .2));
+};
+fugue.core.beep.call(null);
