@@ -13,4 +13,12 @@
   (let [lfo (mult (sin-osc 2) 300)]
     (out (mult (lpf (saw freq) lfo) 0.2))))
 
-(wobble 200)
+(defn wobble2 [freq]
+  (let [lfo (mult (sin-osc 2) 300)]
+    (-> freq
+        saw
+        (lpf lfo)
+        (mult 0.2)
+        out)))
+
+(wobble2 200)

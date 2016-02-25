@@ -4,6 +4,14 @@ goog.provide('fugue.engine')
 
 fugue.engine.ctx = new AudioContext()
 
+fugue.engine.setConnectParam_ = function(param, value) {
+  if (typeof value === 'number') {
+    param.value = value
+  } else {
+    value.connect(param)
+  }
+}
+
 /**
  * Creates and plays an OscillatorNode
  * @param {string} type
@@ -43,8 +51,7 @@ fugue.engine.bqfilter = function(input, type, freq) {
   var filterNode = fugue.engine.ctx.createBiquadFilter()
   filterNode.type = type
 
-  // filterNode.frequency.value = freq
-  freq.connect(filterNode.frequency)
+  fugue.engine.setConnectParam_(filterNode.frequency, freq)
 
   input.connect(filterNode)
   return filterNode
