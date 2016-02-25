@@ -33,6 +33,25 @@ fugue.engine.gain = function(input, gain) {
 }
 
 /**
+ * Connect a BiquadFilterNode to the input
+ * @param {AudioNode} input
+ * @param {string} type
+ * @param {float} freq
+ * @return {BiquadFilterNode} End of chain
+ */
+fugue.engine.bqfilter = function(input, type, freq) {
+  var filterNode = fugue.engine.ctx.createBiquadFilter()
+  filterNode.type = type
+
+  // filterNode.frequency.value = freq
+  freq.connect(filterNode.frequency)
+
+  input.connect(filterNode)
+  return filterNode
+}
+
+
+/**
  * Connects an AudioNode to the audio destination
  * @param {AudioNode} input
  */
