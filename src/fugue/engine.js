@@ -1,31 +1,42 @@
 // Fugue audio engine
 
-goog.provide('engine')
+goog.provide('fugue.engine')
 
-engine.audioEngine = function() {
-  var audio = {}
-  audio.actx = new AudioContext()
-  audio.nodes = []
+fugue.engine.ctx = new AudioContext()
 
-  audio.out = function(input) {
-    input.connect(this.actx.destination)
-  }
-
-  audio.gain = function(input, gain) {
-    var gainNode = this.actx.createGain()
-    gainNode.gain.value = gain
-    input.connect(gainNode)
-    return gainNode
-  }
-
-  audio.sinosc = function(freq) {
-    var oscNode = this.actx.createOscillator()
-    oscNode.type = 'sine'
-    oscNode.frequency.value = freq
-    // this.nodes.push(oscNode)
-    oscNode.start()
-    console.log('playing')
-    return oscNode
-  }
-  return audio;
+/**
+ * Creates and plays an OscillatorNode
+ * @param {string} type
+ * @param {float} freq
+ * @return {OscillatorNode} Created node
+ */
+fugue.engine.osc = function(type, freq) {
+  var oscNode = fugue.engine.ctx.createOscillator()
+  oscNode.type = type
+  oscNode.frequency.value = freq
+  oscNode.start()
+  console.log('playing')
+  return oscNode
 }
+
+/**
+ * Connects a GainNode to the input
+ * @param {AudioNode} input
+ * @param {float} gain
+ * @return {GainNode} End of chain
+ */
+fugue.engine.gain = function(input, gain) {
+  var gainNode = fugue.engine.ctx.createGain()
+  gainNode.gain.value = gain
+  input.connect(gainNode)
+  return gainNode
+}
+
+/**
+ * Connects an AudioNode to the audio destination
+ * @param {AudioNode} input
+ */
+fugue.engine.out = function(input) {
+  input.connect(fugue.engine.ctx.destination)
+}
+
