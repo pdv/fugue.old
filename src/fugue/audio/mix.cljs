@@ -1,5 +1,5 @@
 (ns fugue.audio.mix
-  (:require [fugue.engine :refer [gain]]))
+  (:require fugue.engine))
 
 (defn mult [in amp]
-  (gain in amp))
+  (fugue.engine/gain in amp))

@@ -1,6 +1,6 @@
 // Fugue audio engine
 
-goog.provide('fugue.engine')
+//goog.provide('fugue.engine')
 
 fugue.engine.ctx = new AudioContext()
 
@@ -11,6 +11,7 @@ fugue.engine.setConnectParam_ = function(param, value) {
     value.connect(param)
   }
 }
+
 
 /**
  * Creates and plays an OscillatorNode
@@ -27,6 +28,7 @@ fugue.engine.osc = function(type, freq) {
   return oscNode
 }
 
+
 /**
  * Connects a GainNode to the input
  * @param {AudioNode} input
@@ -39,6 +41,7 @@ fugue.engine.gain = function(input, gain) {
   input.connect(gainNode)
   return gainNode
 }
+
 
 /**
  * Connect a BiquadFilterNode to the input

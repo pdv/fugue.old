@@ -1,11 +1,11 @@
 (ns fugue.audio.osc
-  (:require [fugue.engine :refer [osc]]))
+  (:require [fugue.engine :as e]))
 
 (defn sin-osc [freq]
-  (osc "sine" freq))
+  (e/osc "sine" freq))
 
 (defn square [freq]
-  (osc "square" freq))
+  (e/osc "square" freq))
 
 (defn saw [freq]
-  (osc "sawtooth" freq))
+  (e/osc "sawtooth" freq))
