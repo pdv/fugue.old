@@ -1,5 +1,9 @@
 (ns fugue.audio.mix
-  (:require fugue.engine))
+  (:require [fugue.engine :as e]))
 
-(defn mult [in amp]
-  (fugue.engine/gain in amp))
+(defn boost [in amp]
+  (e/boost in amp))
+
+(defn gain [in amp]
+  (e/gain in amp))
+
