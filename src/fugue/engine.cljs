@@ -22,11 +22,23 @@
     (.start osc-node)
     osc-node))
 
+(defn perc
+  [in attack release]
+  (let [gain-node (.createGain @ctx)
+        now (.-currentTime @ctx)
+        attack-t (+ now attack)
+        decay-t (+ attack-t release)]
+    (set! (.. gain-node -gain -value) 0)
+    (.exponentialRampToValueAtTime (.-gain gain-node) 0.9 attack-t)
+    (.exponentialRampToValueAtTime (.-gain gain-node) 0.001 decay-t)
+    (.connect in gain-node)
+    gain-node))
+
 (defn boost
   "Adds the given amount to the input"
   [in amount]
   (let [gain-node (.createGain @ctx)]
-    (set! (.. gain-node -gain -value) amount)
+    (param (.-gain gain-node) amount)
     (.connect in (.-gain gain-node))
     gain-node))
 
@@ -34,7 +46,7 @@
   "Creates a GainNode and attaches it to the input"
   [in amount]
   (let [gain-node (.createGain @ctx)]
-    (set! (.. gain-node -gain -value) amount)
+    (param (.-gain gain-node) amount)
     (.connect in gain-node)
     gain-node))
 

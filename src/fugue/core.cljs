@@ -2,4 +2,3 @@
 
 (enable-console-print!)
 (println "Fugue loaded")
-
