@@ -3,12 +3,12 @@
             [fugue.audio.mix :refer [boost gain]]
             [fugue.audio.filter :refer [lpf]]
             [fugue.audio.io :refer [out]]
-            [fugue.engine :refer [perc stop]]))
+            [fugue.engine.ctx :refer [reload!]]))
 
 (defn foo [] (out (sin-osc 440)))
 
 (foo)
-(stop)
+(reload!)
 
 (defn wobble [freq]
   (let [lfo (gain (sin-osc 2) 300)]
@@ -97,6 +97,13 @@
   {:major [2 2 1 2 2 2]
    :minor [2 1 2 2 1 2]
    :blues [3 2 1 1 3]})
+
+(defn scale [root type]
+  (reduce
+   (fn [notes interval]
+     (conj notes (+ (last notes) interval)))
+   [root]
+   (SCALES type)))
 
 (scale (note :c 4) :major)
 

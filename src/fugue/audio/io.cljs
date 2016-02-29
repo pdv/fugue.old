@@ -1,5 +1,5 @@
 (ns fugue.audio.io
-  (:require [fugue.engine :as e]))
+  (:require [fugue.engine.ctx :as ctx]))
 
 (defn out [in]
-  (e/out in))
+  (ctx/out in))

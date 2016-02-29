@@ -1,5 +1,5 @@
 (ns fugue.audio.osc
-  (:require [fugue.engine :as e]))
+  (:require [fugue.engine.nodes :as e]))
 
 (defn sin-osc [freq]
   (e/osc "sine" freq))
