@@ -2,13 +2,25 @@
   (:require [fugue.audio.osc :refer [sin-osc saw]]
             [fugue.audio.mix :refer [boost gain]]
             [fugue.audio.filter :refer [lpf]]
-            [fugue.audio.io :refer [out]]
-            [fugue.engine.ctx :refer [reload!]]))
+            [fugue.audio.io :as io]
+            [fugue.transport :refer [stop]]
+            [fugue.engine.sig-utils :refer [noise dc]]
+            [fugue.engine.envelope :refer [perc env-test]]))
 
-(defn foo [] (out (sin-osc 440)))
+(defn out [output]
+  (io/out (gain output 0.5)))
 
-(foo)
-(reload!)
+(out (noise 0.2))
+(stop)
+(out (sin-osc 440))
+(stop)
+
+(defn foo [freq]
+  (out (sin-osc freq)))
+
+(foo 440)
+(foo 441)
+(stop)
 
 (defn wobble [freq]
   (let [lfo (gain (sin-osc 2) 300)]
@@ -27,11 +39,14 @@
       (gain 0.2)
       out))
 
+(out (dc 0.2))
+
+
 (wobble2 200 400)
 
 (wobble2 200 (lfo 0.2 500 400))
 
-(stop)
+(reload!)
 
 
 ;;; Music theory
@@ -58,9 +73,9 @@
 
 (defn ding [freq]
   (-> freq
-      sin-osc
-      (gain 0.2)
-      (perc 0.05 0.5)
+      saw
+      (gain 0.8)
+      (perc 0.15 0.5)
       out))
 
 (ding 440)
@@ -89,8 +104,12 @@
   (doseq [note chord] (ding-note note)))
 
 (ding-chord (chord (note :c 4) :major))
+(ding-chord (chord (note :g 4) :major))
+(ding-chord (chord (note :a 4) :minor))
+(ding-chord (chord (note :f 4) :major))
 
-(ding-chord (chord (note :d 5) :minor))
+(stop)
+
 
 
 (def SCALES

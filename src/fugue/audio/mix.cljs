@@ -6,4 +6,3 @@
 
 (defn gain [in amp]
   (e/gain in amp))
-
