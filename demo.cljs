@@ -5,7 +5,9 @@
             [fugue.audio.io :as io]
             [fugue.transport :refer [stop]]
             [fugue.engine.sig-utils :refer [noise dc]]
-            [fugue.engine.envelope :refer [perc env-test]]))
+            [fugue.engine.time :refer [now at]]
+            [fugue.engine.envelope :refer [perc env-test]]
+            [fugue.engine.ctx :as ctx]))
 
 (defn out [output]
   (io/out (gain output 0.5)))
@@ -24,32 +26,124 @@
 
 (defn wobble [freq]
   (let [lfo (gain (sin-osc 2) 300)]
-    (out (gain (lpf (saw freq) lfo) 0.2))))
+    (out (lpf (saw freq) lfo))))
 
-(wobble 440)
+(wobble 220)
 (stop)
 
-(defn lfo [freq scale bias]
-  (boost (gain (sin-osc freq) scale) bias))
+(defn lfo [freq scale]
+  (gain (sin-osc freq) scale))
 
-(defn wobble2 [freq cutoff]
+(defn wobble2 [freq]
   (-> freq
       saw
-      (lpf (lfo 2 300 cutoff))
-      (gain 0.2)
+      (lpf (lfo 2 300))
       out))
 
-(out (dc 0.2))
+
+(wobble2 220)
+(wobble2 (lfo 0.2 50))
+(stop)
 
 
-(wobble2 200 400)
-
-(wobble2 200 (lfo 0.2 500 400))
-
-(reload!)
 
 
+;; Midi Notes
+
+(defn ding! [freq]
+  (-> freq
+      sin-osc
+      (perc 0.2 1.3)
+      out))
+
+(ding! 440)
+
+
+(defn midi->hz [note]
+  (* 440.0 (.pow js/Math 2.0 (/ (- note 69.0) 12.0))))
+
+(defn ding-note! [note]
+  (ding! (midi->hz note)))
+
+(ding-note! 60)
+
+(defn ding-chord! [notes]
+  (doseq [note notes]
+    (ding-note! note)))
+
+(ding-chord! [60 64 67])
+
+
+
+;; Timing
+
+(now)
+(at (+ 6 (now)) #(ding-note! 60))
+
+(defn note [time pitch] {:time time :pitch pitch})
+
+(note 3 60)
+
+(defn where [k f notes] (->> notes (map #(update-in % [k] f))))
+(defn from [offset] (partial + offset))
+
+(defn play! [notes]
+  (let [scheduled-notes (->> notes (where :time (from (now))))]
+    (doseq [{time :time note :pitch} scheduled-notes]
+      (at time #(ding-note! note)))
+    scheduled-notes))
+
+(defn even-melody! [pitches]
+  (let [times (reductions + (repeat 0.2))
+        notes (map tnote times pitches)]
+    (play! notes)))
+
+
+(even-melody! (range 60 67))
+
+
+
+;; Music Theory
+
+
+(defn scale [intervals]
+  (fn [degree]
+    (reductions + degree (cycle intervals))))
+
+(defn scale [intervals]
+  (fn [degree]
+    (reduce
+      (fn [notes interval]
+        (conj notes (+ (last notes) interval)))
+      [degree]
+      (cycle intervals))))
+
+
+(def major (scale [2 2 1 2 2 1]))
+(take 5 (major 60))
+
+(.log js/console major)
+
+
+
+(def minor (scale [2 1 2 2 1 2]))
+
+(def C (from 60))
+(defs [D E F G A B]
+  (map
+   (comp from C major)
+   (rest (range))))
+
+(def sharp inc)
+(def flat dec)
+
+(take 8 (comp C sharp minor))
+
+
+
+;;; --------------------------------
 ;;; Music theory
+
 
 (def C4 60)
 
@@ -73,9 +167,9 @@
 
 (defn ding [freq]
   (-> freq
-      saw
-      (gain 0.8)
-      (perc 0.15 0.5)
+      sin-osc
+      (perc 0.2 1.3)
+      (gain 0.5)
       out))
 
 (ding 440)
@@ -111,11 +205,10 @@
 (stop)
 
 
-
 (def SCALES
-  {:major [2 2 1 2 2 2]
-   :minor [2 1 2 2 1 2]
-   :blues [3 2 1 1 3]})
+  {:major [2 2 1 2 2 2 1]
+   :minor [2 1 2 2 1 2 2]
+   :blues [3 2 1 1 3 2]})
 
 (defn scale [root type]
   (reduce
