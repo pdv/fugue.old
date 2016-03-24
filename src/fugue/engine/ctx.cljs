@@ -11,8 +11,9 @@
 (defn current-time []
   (.-currentTime @ctx*))
 
-(defn out [output]
-  (.connect output (.-destination @ctx*)))
+(defn out [in]
+  (.connect in (.-destination @ctx*))
+  in)
 
 (defn sample-rate []
   (.-sampleRate @ctx*))
@@ -26,8 +27,8 @@
 (defn create-gain []
   (.createGain @ctx*))
 
-(defn create-delay []
-  (.createDelay @ctx*))
+(defn create-delay [max-delay]
+  (.createDelay @ctx* max-delay))
 
 (defn- float32-array
   "Converts a sequence to a Float32Array"

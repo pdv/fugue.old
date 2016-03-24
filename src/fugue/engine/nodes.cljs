@@ -13,13 +13,12 @@
 
 (defn osc
   "Creates and starts an OscillatorNode with optional delay"
-  ([type freq] (osc type freq 0))
-  ([type freq delay]
+  [type freq]
    (let [osc-node (ctx/create-oscillator)]
      (set! (.-type osc-node) type)
      (set-param! (.-frequency osc-node) freq)
-     (.start osc-node delay)
-     osc-node)))
+     (.start osc-node)
+     osc-node))
 
 (defn gain
   "Creates a GainNode and attaches it to the input node"
@@ -41,7 +40,7 @@
 (defn sig-delay
   "Delays in the input signal by the given amount in seconds"
   [in delay-time]
-  (let [delay-node (ctx/create-delay)]
+  (let [delay-node (ctx/create-delay (* 2 delay-time))]
     (set-param! (.-delayTime delay-node) delay-time)
     (connect in delay-node)
     delay-node))

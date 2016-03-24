@@ -9,6 +9,21 @@
             [fugue.engine.envelope :refer [perc env-test]]
             [fugue.engine.ctx :as ctx]))
 
+;; Experiments
+
+(defn inside
+  ([n] (inside n 0))
+  ([n a] a))
+
+(inside 3)
+(inside 3 4)
+
+(defn outside [b]
+  (inside b))
+
+
+;; end experiments
+
 (defn out [output]
   (io/out (gain output 0.5)))
 
@@ -110,25 +125,14 @@
   (fn [degree]
     (reductions + degree (cycle intervals))))
 
-(defn scale [intervals]
-  (fn [degree]
-    (reduce
-      (fn [notes interval]
-        (conj notes (+ (last notes) interval)))
-      [degree]
-      (cycle intervals))))
-
 
 (def major (scale [2 2 1 2 2 1]))
-(take 5 (major 60))
-
-(.log js/console major)
-
-
-
 (def minor (scale [2 1 2 2 1 2]))
 
-(def C (from 60))
+(take 8 (major 60))
+
+
+(def C 60)
 (defs [D E F G A B]
   (map
    (comp from C major)
@@ -137,12 +141,40 @@
 (def sharp inc)
 (def flat dec)
 
-(take 8 (comp C sharp minor))
+
+(take 8 (-> (C) sharp major))
 
 
 
 ;;; --------------------------------
 ;;; Music theory
+
+
+(defn metronome [bpm]
+  (reductions + (now) (repeat (/ 60 bpm))))
+
+(take 5 (metronome 120))
+
+(def metro (metronome 120))
+
+(take 5 metro)
+
+
+(defn foo1 [a b]
+  (+ a b))
+
+(defn foo2 [a]
+  (partial foo1 a))
+
+
+(def foo (partial + 2))
+
+(foo 2)
+
+(defn bar [fun]
+  (+ 3 fun))
+
+(bar (foo 0))
 
 
 (def C4 60)
@@ -218,4 +250,33 @@
    (SCALES type)))
 
 (scale (note :c 4) :major)
+
+;;; -------------------------------------
+;;; Experiments
+
+(defn play! [freq]
+  (out (sin-osc freq)))
+
+(defn sin-osc [freq]
+  (partial osc "sine" freq))
+
+(defn at [time fn]
+  (call fn (- time (now))))
+
+(def metro (metronome 120 4 4))
+
+; bar 2, beat 2-a
+(at (metro 2 2 3) (sin-osc 40))
+
+(at (metro 2 2) (hold (inst 230)))
+
+(defn wobbly [freq rate amount gate]
+  (let [lfo (gain (sin-osc rate) amount)]
+    (-> freq
+        saw
+        (lpf (lfo 2 300))
+        (gain (env-gen (asdr 0.01 0.1 0.8 0.1) gate 1 0))
+        out)))
+
+(def midi-wobbly (midi-player wobbly))
 
