@@ -2,4 +2,5 @@
   (:require [fugue.engine.nodes :as nodes]))
 
 (defn gain [in amp]
-  (e/gain in amp))
+  (nodes/gain in amp))
+

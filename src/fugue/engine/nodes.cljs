@@ -37,10 +37,11 @@
     (connect in filter-node)
     filter-node))
 
-(defn sig-delay
+(defn delay
   "Delays in the input signal by the given amount in seconds"
-  [in delay-time]
-  (let [delay-node (ctx/create-delay (* 2 delay-time))]
-    (set-param! (.-delayTime delay-node) delay-time)
+  [in delay-t]
+  (let [delay-node (ctx/create-delay (* 2 delay-t))]
+    (set-param! (.-delayTime delay-node) delay-t)
     (connect in delay-node)
     delay-node))
+

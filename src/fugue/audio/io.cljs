@@ -3,3 +3,13 @@
 
 (defn out [in]
   (ctx/out in))
+
+(defn mix
+  "TODO"
+  [& chains]
+  (apply gain chains))
+
+(defn parallel
+  "TODO"
+  [in & chains]
+  (merge (apply chains in)))

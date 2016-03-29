@@ -5,24 +5,25 @@
             [fugue.audio.io :as io]
             [fugue.transport :refer [stop]]
             [fugue.engine.sig-utils :refer [noise dc]]
-            [fugue.engine.time :refer [now at]]
+            [fugue.engine.time :refer [now after at every]]
             [fugue.engine.envelope :refer [perc env-test]]
             [fugue.engine.ctx :as ctx]))
 
 ;; Experiments
 
-(defn inside
-  ([n] (inside n 0))
-  ([n a] a))
+(defn epiano [freq velocity gate]
+  (-> freq
+      (parallel
+       (sin-osc)
+       (saw))
+      (env-gen (asdr 0.01 0.1 0.8 0.3) gate velocity)
+      (ping-pong 0.4 0.2)
+      (reverb 0.3)
+      out))
 
-(inside 3)
-(inside 3 4)
+((midi-wrap epiano) (midi-in "oxygen49"))
 
-(defn outside [b]
-  (inside b))
-
-
-;; end experiments
+;; End Experiments
 
 (defn out [output]
   (io/out (gain output 0.5)))
@@ -31,6 +32,14 @@
 (stop)
 (out (sin-osc 440))
 (stop)
+
+(defn ding []
+  (perc (sin-osc 440) 0.3 0.5))
+
+
+(out (ding))
+(out (every 0.5 (ding)))
+
 
 (defn foo [freq]
   (out (sin-osc freq)))
