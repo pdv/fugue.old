@@ -1,5 +1,5 @@
 (ns fugue.audio.filter
-  (:require [fugue.engine.nodes :as nodes]))
+  (:require [fugue.engine :as engine]))
 
 (defn lpf [in freq]
-  (nodes/biquad-filter in "lowpass" freq))
+  (engine/biquad-filter in "lowpass" freq))

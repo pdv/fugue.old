@@ -1,6 +1,6 @@
 (ns fugue.audio.mix
-  (:require [fugue.engine.nodes :as nodes]))
+  (:require [fugue.engine :as engine]))
 
 (defn gain [in amp]
-  (nodes/gain in amp))
+  (engine/gain in amp))
 
