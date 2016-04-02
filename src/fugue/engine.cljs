@@ -1,12 +1,12 @@
 (ns fugue.engine)
 
-(defonce ctx* (atom js/AudioContext.))
+(defonce ctx* (atom (js/AudioContext.)))
 
 (defn reload!
   "Close the current context and replace it with a new one"
   []
   (.close @ctx*)
-  (reset! ctx* (js/AudioContext)))
+  (reset! ctx* (js/AudioContext.)))
 
 (defn now []
   (.-currentTime @ctx*))
@@ -17,6 +17,7 @@
   (if (number? value)
     (set! (.-value param) value)
     (value param)))
+
 
 (defn schedule-value!
   "Ramps the parametere to the value at the given time from now"
@@ -45,18 +46,19 @@
 
 (defn biquad-filter
   "Apply a biquad filter to the input signal"
+  [in type freq]
   (let [filter-node (.createBiquadFilter @ctx*)]
     (set! (.-type filter-node) type)
     (set-param! (.-frequency filter-node) freq)
-    (connect in filter-node)
+    (.connect in filter-node)
     filter-node))
 
-(defn delay
+(defn sig-delay
   "Delays in the input signal by the given amount in seconds"
   [in delay-t]
   (let [delay-node (.createDelay @ctx* (* 2 delay-t))]
     (set-param! (.-delayTime delay-node) delay-t)
-    (connect in delay-node)
+    (.connect in delay-node)
     delay-node))
 
 (defn gain
@@ -64,5 +66,5 @@
   [in amount]
   (let [gain-node (.createGain @ctx*)]
     (set-param! (.-gain gain-node) amount)
-    (connect in gain-node)
+    (.connect in gain-node)
     gain-node))

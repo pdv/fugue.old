@@ -1,8 +1,8 @@
 (ns fugue.audio.io
-  (:require [fugue.engine.ctx :as ctx]))
+  (:require [fugue.engine :as engine]))
 
 (defn out [in]
-  (ctx/out in))
+  (engine/out in))
 
 (defn mix
   "TODO"

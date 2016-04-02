@@ -1,15 +1,15 @@
 (ns fugue.demo
   (:require [fugue.audio.osc :refer [sin-osc saw]]
-            [fugue.audio.mix :refer [boost gain]]
+            [fugue.audio.mix :refer [gain]]
             [fugue.audio.filter :refer [lpf]]
             [fugue.audio.io :as io]
             [fugue.transport :refer [stop]]
-            [fugue.engine.sig-utils :refer [noise dc]]
-            [fugue.engine.time :refer [now after at every]]
-            [fugue.engine.envelope :refer [perc env-test]]
-            [fugue.engine.ctx :as ctx]))
+            [fugue.envelope :refer [perc env-gen]]))
 
 ;; Experiments
+
+(io/out (gain 0.5 (sin-osc 440)))
+(stop)
 
 (defn epiano [freq velocity gate]
   (-> freq

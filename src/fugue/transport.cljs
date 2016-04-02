@@ -1,6 +1,6 @@
 (ns fugue.transport
-  (:require [fugue.engine.ctx :as ctx]))
+  (:require [fugue.engine :as engine]))
 
 (defn stop []
-  (ctx/reload!))
+  (engine/reload!))
 

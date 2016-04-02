@@ -28,7 +28,7 @@
                  (let [levels (if (= 0 gate-new) off-levels on-levels)
                        times (map #(+ (engine/now) %)
                                   (if (= 0 gate-new) off-times on-times))]
-                   (map #(engine/schedule-value! param level time) levels times))))]
+                   (map #(engine/schedule-value! param %1 %2) levels times))))]
        (fn [param]
          (gate-change param 0 gate)
          (add-watch gate :gate #(gate-change param %3 %4)))))))
