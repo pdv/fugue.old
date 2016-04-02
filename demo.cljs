@@ -4,41 +4,38 @@
             [fugue.audio.filter :refer [lpf]]
             [fugue.audio.io :as io]
             [fugue.transport :refer [stop]]
-            [fugue.envelope :refer [perc env-gen]]))
-
-;; Experiments
-
-(io/out (gain 0.5 (sin-osc 440)))
-(stop)
-
-(defn epiano [freq velocity gate]
-  (-> freq
-      (parallel
-       (sin-osc)
-       (saw))
-      (env-gen (asdr 0.01 0.1 0.8 0.3) gate velocity)
-      (ping-pong 0.4 0.2)
-      (reverb 0.3)
-      out))
-
-((midi-wrap epiano) (midi-in "oxygen49"))
-
-;; End Experiments
+            [fugue.envelope :refer [adsr perc env-gen]]))
 
 (defn out [output]
   (io/out (gain output 0.5)))
 
-(out (noise 0.2))
-(stop)
-(out (sin-osc 440))
-(stop)
+(def gate (atom 1))
 
 (defn ding []
-  (perc (sin-osc 440) 0.3 0.5))
-
+  (gain (saw 440) (env-gen (adsr 5 5 0.5 8) gate)))
 
 (out (ding))
-(out (every 0.5 (ding)))
+
+(swap! gate dec)
+(swap! gate inc)
+
+(stop)
+
+;; Experiments
+
+ (defn epiano [freq velocity gate]
+   (-> freq
+       (parallel
+        (sin-osc)
+        (saw))
+       (env-gen (asdr 0.01 0.1 0.8 0.3) gate velocity)
+       (ping-pong 0.4 0.2)
+       (reverb 0.3)
+       out))
+
+ ((midi-wrap epiano) (midi-in "oxygen49"))
+
+ ;; End Experiments
 
 
 (defn foo [freq]

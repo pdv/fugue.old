@@ -3,4 +3,3 @@
 
 (defn gain [in amp]
   (engine/gain in amp))
-

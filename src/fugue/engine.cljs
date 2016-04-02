@@ -18,18 +18,15 @@
     (set! (.-value param) value)
     (value param)))
 
-
 (defn schedule-value!
   "Ramps the parametere to the value at the given time from now"
   [param value time]
   (if (= value 0)
-    (do
-      (.exponentialRampToValueAtTime param 0.001 time)
-      (set! (.-value param) 0))
+    (.exponentialRampToValueAtTime param 0.00001 time)
     (.exponentialRampToValueAtTime param value time)))
 
 (defn cancel-scheduled-values! [param]
-  (.cancelScheduledValues param))
+  (.cancelScheduledValues param (now)))
 
 (defn out [in]
   (.connect in (.-destination @ctx*))
