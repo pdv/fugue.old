@@ -9,18 +9,6 @@
 (defn out [output]
   (io/out (gain output 0.5)))
 
-(def gate (atom 1))
-
-(defn ding []
-  (gain (saw 440) (env-gen (adsr 5 5 0.5 8) gate)))
-
-(out (ding))
-
-(swap! gate dec)
-(swap! gate inc)
-
-(stop)
-
 ;; Experiments
 
  (defn epiano [freq velocity gate]

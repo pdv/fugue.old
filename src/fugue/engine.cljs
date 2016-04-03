@@ -25,8 +25,12 @@
     (.exponentialRampToValueAtTime param 0.00001 time)
     (.exponentialRampToValueAtTime param value time)))
 
-(defn cancel-scheduled-values! [param]
-  (.cancelScheduledValues param (now)))
+(defn cancel-scheduled-values!
+  "Cancels scheduled values but maintains the current value"
+  [param]
+  (let [current (.-value param)]
+    (.cancelScheduledValues param (now))
+    (.setValueAtTime param current (now))))
 
 (defn out [in]
   (.connect in (.-destination @ctx*))

@@ -21,15 +21,13 @@
          on-levels (take n levels)
          off-levels (drop n levels)
          on-times (reductions + (take n (cons 0 (:times env))))
-         off-times (reductions + (drop n (:times env)))]
+         off-times (reductions + (drop (- n 1) (:times env)))]
      (letfn [(gate-change [param gate-old gate-new]
                (when (not (= gate-old gate-new))
                  (engine/cancel-scheduled-values! param)
-                 (let [levels (if (= 0 gate-new) off-levels on-levels)
+                 (let [levels (if (> 0 gate-new) on-levels off-levels)
                        times (map #(+ (engine/now) %)
-                                  (if (= 0 gate-new) off-times on-times))]
-                   (println levels)
-                   (println times)
+                                  (if (> 0 gate-new) on-times off-times))]
                    (dorun (map #(engine/schedule-value! param %1 %2) levels times)))))]
        (fn [param]
          (gate-change param 0 @gate)
