@@ -9,6 +9,20 @@
 (defn out [output]
   (io/out (gain output 0.5)))
 
+(def gate (atom 1))
+
+(defn buzz []
+  (out (gain (saw 440) (env-gen (adsr 2 2 0.3 2) gate))))
+
+(buzz)
+
+(reset! gate 0)
+
+(reset! gate 1)
+
+(stop)
+
+
 ;; Experiments
 
  (defn epiano [freq velocity gate]

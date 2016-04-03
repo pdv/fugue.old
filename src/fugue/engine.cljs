@@ -14,6 +14,7 @@
 (defn set-param!
   "Sets a parameter to a value or applies a function to it"
   [param value]
+  (println "setParam" value)
   (if (number? value)
     (set! (.-value param) value)
     (value param)))
@@ -21,6 +22,7 @@
 (defn schedule-value!
   "Ramps the parametere to the value at the given time from now"
   [param value time]
+  (println "exponentialRampToValueAtTime" value time)
   (if (= value 0)
     (.exponentialRampToValueAtTime param 0.00001 time)
     (.exponentialRampToValueAtTime param value time)))
@@ -30,7 +32,8 @@
   [param]
   (let [current (.-value param)]
     (.cancelScheduledValues param (now))
-    (.setValueAtTime param current (now))))
+    (.setValueAtTime param current (now))
+    (schedule-value! param current (now))))
 
 (defn out [in]
   (.connect in (.-destination @ctx*))
