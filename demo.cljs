@@ -11,10 +11,10 @@
 
 (def gate (atom 1))
 
-(defn buzz []
-  (out (gain (saw 440) (env-gen (adsr 2 2 0.3 2) gate))))
+(defn buzz [freq]
+  (gain (saw freq) (env-gen (adsr 0.5 0.5 0.2 0.5) gate)))
 
-(buzz)
+(out (buzz 220))
 
 (reset! gate 0)
 
