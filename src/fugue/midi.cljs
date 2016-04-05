@@ -3,12 +3,19 @@
   (:require [cljs.core.async :refer [chan >!]]))
 
 (defonce midi-ins (atom {}))
+(defonce midi-outs (atom {}))
 
 (defn midi-in [name]
   (@midi-ins name))
 
-(defn midi-devices []
+(println @midi-ins)
+
+
+(defn midi-in-devices []
   (keys @midi-ins))
+
+(defn midi-out-devices []
+  (keys @midi-outs))
 
 (defn printer
   [in]
@@ -35,20 +42,19 @@
           #(go (>! c (arr->msg (.-data %)))))
     c))
 
-(defn input-map
-  "Creates a name-channel map for the inputs from midi-access"
-  [midi-access]
-  (let [inputs (.values (.-inputs midi-access))]
-    (loop [input-map {}
-           input (.next inputs)]
-      (if (.-done input)
-        input-map
-        (recur (assoc input-map
-                      (.. input -value -name)
-                      (in->chan (.-value input)))
-               (.next inputs))))))
+(defn port-map
+  "Returns a name-channel map from a seq of MidiPorts"
+  [port->chan ports]
+  (apply merge (map #(hash-map (.-name %) (port->chan %)) ports)))
+
+(defn maplike->seq
+  "The Web MIDI Api uses 'maplike' for its MIDIInputMap and MIDIOutputMap"
+  [m]
+  (js->clj (.from js/Array (.values m))))
 
 (defn midi-init []
   (.. (.requestMIDIAccess js/navigator)
-      (then #(reset! midi-ins (input-map %)))))
+      (then (fn [midi-access]
+              (reset! midi-ins (port-map in->chan (maplike->seq (.-inputs midi-access))))))))
+      ;        (reset! midi-outs (port-map out->chan (maplike->seq (-.outputs midi-access))))))))
 

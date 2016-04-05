@@ -5,14 +5,13 @@
             [fugue.audio.io :as io]
             [fugue.transport :refer [stop]]
             [fugue.envelope :refer [adsr perc env-gen]]
-            [fugue.midi :refer [midi-init midi-in midi-devices printer]]))
+            [fugue.midi :refer [midi-init midi-in midi-in-devices printer]]))
 
 (midi-init)
 
-(midi-devices)
+(midi-in-devices)
 
 (printer (midi-in "Launchpad"))
-
 
 (defn out [output]
   (io/out (gain output 0.5)))
