@@ -5,6 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.7.228"]
+                 [org.clojure/core.async "0.2.374"]
                  [com.cemerick/piggieback "0.2.1"]
                  [weasel "0.7.0"]]
   :plugins [[lein-cljsbuild "1.1.2"]]

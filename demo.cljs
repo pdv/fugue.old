@@ -4,7 +4,8 @@
             [fugue.audio.filter :refer [lpf]]
             [fugue.audio.io :as io]
             [fugue.transport :refer [stop]]
-            [fugue.envelope :refer [adsr perc env-gen]]))
+            [fugue.envelope :refer [adsr perc env-gen]]
+            [fugue.midi :refer [midi-init midi-in midi-devices]]))
 
 (defn out [output]
   (io/out (gain output 0.5)))
