@@ -10,6 +10,10 @@
 (defn midi-devices []
   (keys @midi-ins))
 
+(defn printer
+  [in]
+  (go (while true (.log js/console (clj->js (<! in))))))
+
 (def msg-type
   {144 :note-on
    128 :note-off
@@ -18,7 +22,7 @@
 (defn arr->msg
   "Turns a Uint8Array message into a map"
   [arr]
-  (let [[status note velocity] (js->clj arr)]
+  (let [[status note velocity] (js->clj (.from js/Array arr))]
     {:type (msg-type (bit-and status 0xf0))
      :note note
      :velocity velocity}))
@@ -28,7 +32,7 @@
   [midi-input]
   (let [c (chan)]
     (set! (.-onmidimessage midi-input)
-          #((go (>! c (arr->msg (.-data %))))))
+          #(go (>! c (arr->msg (.-data %)))))
     c))
 
 (defn input-map
@@ -37,7 +41,6 @@
   (let [inputs (.values (.-inputs midi-access))]
     (loop [input-map {}
            input (.next inputs)]
-      (.log js/console input)
       (if (.-done input)
         input-map
         (recur (assoc input-map
