@@ -8,8 +8,8 @@
 (defn midi-in [name]
   (@midi-ins name))
 
-(println @midi-ins)
-
+(defn midi-out [name]
+  (@midi-outs name))
 
 (defn midi-in-devices []
   (keys @midi-ins))
@@ -34,12 +34,24 @@
      :note note
      :velocity velocity}))
 
+(defn msg->arr
+  "Turns a midi message into a js array"
+  [msg]
+  (clj->js [144 (:note msg) (:velocity msg)]))
+
 (defn in->chan
   "Turns a MIDIInput into an async channel"
   [midi-input]
   (let [c (chan)]
     (set! (.-onmidimessage midi-input)
           #(go (>! c (arr->msg (.-data %)))))
+    c))
+
+(defn out->chan
+  "Turns a MIDIOutput into a receiver channel"
+  [midi-output]
+  (let [c (chan)]
+    (go (while true (.send midi-output (msg->arr (<! c)))))
     c))
 
 (defn port-map
@@ -52,9 +64,10 @@
   [m]
   (js->clj (.from js/Array (.values m))))
 
+(defn reset-ports! [midi-access]
+  (reset! midi-ins (port-map in->chan (maplike->seq (.-inputs midi-access))))
+  (reset! midi-outs (port-map out->chan (maplike->seq (.-outputs midi-access)))))
+
 (defn midi-init []
   (.. (.requestMIDIAccess js/navigator)
-      (then (fn [midi-access]
-              (reset! midi-ins (port-map in->chan (maplike->seq (.-inputs midi-access))))))))
-      ;        (reset! midi-outs (port-map out->chan (maplike->seq (-.outputs midi-access))))))))
-
+      (then reset-ports!)))
