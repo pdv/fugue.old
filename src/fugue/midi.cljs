@@ -68,6 +68,26 @@
   (reset! midi-ins (port-map in->chan (maplike->seq (.-inputs midi-access))))
   (reset! midi-outs (port-map out->chan (maplike->seq (.-outputs midi-access)))))
 
-(defn midi-init []
+(defn midi-init! []
+  "Initializes midi io"
   (.. (.requestMIDIAccess js/navigator)
       (then reset-ports!)))
+
+(comment
+(defn midi-inst
+  "Returns an instrument ()"
+  [f]
+  (fn [in]
+    (go
+      (loop [gates {}
+             msg (<! in)]
+        (if (= (:type msg) :note-on)
+          (let [gate (atom 1)]
+            )
+          )
+      (while true
+          (let [msg (<! in)]
+            (if (= (:type msg) :note-on)
+              ())
+          ()(<! in))))
+))))

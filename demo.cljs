@@ -5,21 +5,24 @@
             [fugue.audio.io :as io]
             [fugue.transport :refer [stop]]
             [fugue.envelope :refer [adsr perc env-gen]]
-            [fugue.midi :refer [midi-init midi-in midi-out midi-in-devices midi-out-devices printer]]
+            [fugue.midi :refer [midi-init! printer
+                                midi-in midi-out
+                                midi-in-devices midi-out-devices]]
             [cljs.core.async :refer [pipe]]))
 
-(midi-init)
+
+;; MIDI Demo
+
+(midi-init!)
 
 (midi-in-devices)
 
-(midi-out-devices)
-
-(printer (midi-in "Launchpad"))
 (midi-in "Launchpad")
 
-(midi-out "Launchpad")
-
 (pipe (midi-in "Launchpad") (midi-out "Launchpad"))
+
+
+;; Env demo
 
 (defn out [output]
   (io/out (gain output 0.5)))
