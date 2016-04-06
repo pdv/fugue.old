@@ -15,9 +15,7 @@
 
 (midi-init!)
 
-(midi-in-devices)
-
-(midi-in "Launchpad")
+(printer (midi-in "Launchpad"))
 
 (pipe (midi-in "Launchpad") (midi-out "Launchpad"))
 
@@ -29,8 +27,45 @@
 
 (def gate (atom 1))
 
-(defn buzz [freq]
-  (gain (saw freq) (env-gen (adsr 0.5 0.5 0.2 0.5) gate)))
+(def note->freq identity)
+
+(defn buzz [note velocity gate]
+  (let [velocity (/ velocity 127)
+        env (env-gen (adsr 0.03 0.15 0.8 0.3) gate velocity)]
+    (-> note
+        note->freq
+        saw
+        lpf 330
+        amp env)))
+
+(defn buzz-synth [cutoff volume]
+  (mono-synth
+   (fn [note velocity gate]
+     (let []))))
+
+(defn better-synth [cuffoff volume]
+  (fn [midi-in]
+    (-> midi-in
+        midi->freq   ; (comp midi->note note->freq)
+        saw
+        (lpf cutoff)
+        (amp (env-gen (asr 0.3 0.8 0.3) (:velocity midi-in))))))
+
+(defn best-synth [midi]
+  (-> (note->freq midi)
+
+(comment
+  (fn [midi-in]
+    (-> midi-in
+        note)
+    (let [velocity (:velocity midi-in)
+          ])))
+
+(out ((mono-synth buzz) (midi-in "Launchpad")))
+
+(out (buzz 300 85 gate))
+
+
 
 (out (buzz 220))
 
@@ -39,7 +74,6 @@
 (reset! gate 1)
 
 (stop)
-
 
 ;; Experiments
 
@@ -80,7 +114,6 @@
       saw
       (lpf (lfo 2 300))
       out))
-
 
 (wobble2 220)
 (wobble2 (lfo 0.2 50))

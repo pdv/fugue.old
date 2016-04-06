@@ -2,4 +2,4 @@
   (:require [fugue.engine :as engine]))
 
 (defn lpf [in freq]
-  (engine/biquad-filter in "lowpass" freq))
+  (engine/biquad-filter in :lowpass freq))

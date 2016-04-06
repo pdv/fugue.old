@@ -30,7 +30,9 @@
   "Turns a Uint8Array message into a map"
   [arr]
   (let [[status note velocity] (js->clj (.from js/Array arr))]
-    {:type (msg-type (bit-and status 0xf0))
+    {:type (if (= 0 velocity)
+             :note-off
+             (msg-type (bit-and status 0xf0)))
      :note note
      :velocity velocity}))
 
@@ -77,10 +79,10 @@
 (defn midi-inst
   "Returns an instrument ()"
   [f]
-  (fn [in]
+  (fn [midi-in]
     (go
       (loop [gates {}
-             msg (<! in)]
+             msg (<! midi-in)]
         (if (= (:type msg) :note-on)
           (let [gate (atom 1)]
             )
