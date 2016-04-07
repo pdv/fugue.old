@@ -4,7 +4,7 @@
 (defn out [in]
   (engine/out in))
 
-(defn mix
+(defn mi(ns fugue.audio.io)
   "TODO"
   [& chains]
   (apply gain chains))

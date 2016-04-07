@@ -51,8 +51,24 @@
         (lpf cutoff)
         (amp (env-gen (asr 0.3 0.8 0.3) (:velocity midi-in))))))
 
+(defn minimoog [midi]
+  (let [freq (note->freq (:note midi))
+        velocity (:velocity midi)
+        amp-env (env-gen (adsr 0.02 0.4 0.8 1.3) velocity)]
+    (-> (sin-osc freq)
+        (lpf 200)
+        (amp ))))
+
 (defn best-synth [midi]
   (-> (note->freq midi)
+      sin-osc
+      (lpf 200)
+      amp ()))
+      amp))
+      (env-gen (adsr 0.3 1.2 0.5 ))
+      (lpf 200)
+
+
 
 (comment
   (fn [midi-in]
