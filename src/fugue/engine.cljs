@@ -1,44 +1,60 @@
-(ns fugue.engine)
+(ns fugue.engine
+  (:require-macros [cljs.core.async.macros :refer [go-loop]])
+  (:require [cljs.core.async :as async :refer [<!]]))
 
-(defonce ctx (atom (js/AudioContext.)))
 
-(defn reload!
-  "Closes the current context and replaces it with a new one"
-  []
-  (.close @ctx)
-  (reset! ctx (js/AudioContext.)))
+(defn make-ctx [] (js/AudioContext.))
 
-(defn now []
-  (.-currentTime @ctx))
+(defn now [ctx]
+  (.-currentTime ctx))
 
-(defn out [in]
-  (.connect in (.-destination @ctx))
+(defn sample-rate [ctx]
+  (.-sampleRate ctx))
+
+(defn resume! [ctx]
+  (.resume ctx))
+
+(defn suspend! [ctx]
+  (.suspend ctx))
+
+(defn close! [ctx]
+  (.close ctx))
+
+(defn out [ctx in]
+  (.connect in (.-destination ctx))
   in)
 
 (def audio? (partial instance? js/AudioNode))
+
+
+;; Buffers and samples
+
+(defn decode-audio [ctx data]
+  (.decodeAudioData ctx data))
+
+(defn audio-buffer
+  [ctx channels length sample-rate]
+  (.createBuffer ctx channels length sample-rate))
 
 
 ;; Parameters and modulation
 
 (defprotocol Modulator
   "A protocol for controlling AudioParams"
-  (attach [modulator param]))
+  (set-param! [param modulator]))
 
 (extend-protocol Modulator
   number
-  (attach [n param] (set! (.-value param) n))
-  js/AudioNode
-  (attach [node param] (.connect node param))
-  function
-  (attach [f param] (f param)))
+  (set-param! [n param] (set! (.-value param) n))
+  cljs.core.async.impl.channels.ManyToManyChannel
+  (set-param! [c param]
+    (go-loop []
+      (let [x (<! c)]
+        (set-param! param x)))))
 
-(defn set-param!
-  "Sets a parameter to a value"
-  [param n]
-  (attach n param))
-
+(comment
 (defn schedule-value!
-  "Ramps the parametere to the value at the given time from now"
+  "Ramps the parameter to the value at the given time from now"
   [param value time]
   (if (= value 0)
     (.exponentialRampToValueAtTime param 0.00001 time)
@@ -53,38 +69,136 @@
     (schedule-value! param current (now))))
 
 
-;; Nodes
+(defrecord EnvGen [env gate scale bias]
+  Modulator
+  (set-param! [this param]
+    (go-loop []
+      (let [g (<! gate)]
+        ()))))
+)
 
-(defn oscillator
-  "Creates and starts an OscillatorNode at the given freq"
-  [type freq]
-  (let [osc-node (.createOscillator @ctx)]
-    (set! (.-type osc-node) (clj->js type))
-    (attach freq (.-frequency osc-node))
-    (.start osc-node)
-    osc-node))
+(defrecord CV [value node]
+  Modulator
+  (set-param! [this param]
+    (set-param! value param)
+    (.connect node param)))
+
+;;; AnalyserNode methods
+
+(defn float-freq-data [analyser] (.getFloatFrequencyData analyser))
+(defn byte-freq-data [analyser] (.getByteFrequencyData analyser))
+(defn float-time-domain-data [analyser] (.getFloatTimeDomainData analyser))
+(defn byte-time-domain-data [analyser] (.getByteTimeDomainData analyser))
+
+
+;;; AudioNode wrappers
+
+(defn analyser
+  [ctx in]
+  (let [analyser-node (.createAnalyser ctx)]
+    (.connect in analyser-node)
+    analyser-node))
 
 (defn biquad-filter
-  "Apply a biquad filter to the input signal"
-  [in type freq]
-  (let [filter-node (.createBiquadFilter @ctx)]
+  [ctx in type freq q]
+  (let [filter-node (.createBiquadFilter ctx)]
     (set! (.-type filter-node) (clj->js type))
-    (attach freq (.-frequency filter-node))
+    (set-param! freq (.-frequency filter-node))
+    (set-param! q (.-Q filter-node))
     (.connect in filter-node)
     filter-node))
 
+(defn convolver
+  [ctx in buffer normalize]
+  (let [convolver-node (.createConvolver ctx)]
+    (set! (.-buffer convolver-node) buffer)
+    (set! (.-normalize convolver-node) normalize)
+    convolver-node))
+
 (defn sig-delay
-  "Delays in the input signal by the given amount in seconds"
-  [in delay-t]
-  (let [delay-node (.createDelay @ctx (* 2 delay-t))]
-    (attach delay-t (.-delayTime delay-node))
+  [ctx in time]
+  (let [delay-node (.createDelay ctx 5)]
+    (set-param! time (.-delayTime delay-node))
     (.connect in delay-node)
     delay-node))
 
+(defn compressor
+  [ctx in threshold knee ratio reduction attack release]
+  (let [compressor-node (.createDynamicsCompressor ctx)]
+    (set-param! threshold (.-threshold compressor-node))
+    (set-param! knee (.-knee compressor-node))
+    (set-param! ratio (.-ratio compressor-node))
+    (set! (.-reduction compressor-node) reduction)
+    (set-param! attack (.-attack compressor-node))
+    (set-param! release (.-release compressor-node))
+    compressor-node))
+
 (defn gain
-  "Creates a GainNode and attaches it to the input node"
-  [in amount]
-  (let [gain-node (.createGain @ctx)]
-    (attach amount (.-gain gain-node))
+  [ctx in amount]
+  (let [gain-node (.createGain ctx)]
+    (set-param! amount (.-gain gain-node))
     (.connect in gain-node)
+    gain-node))
+
+(defn media-element-source [ctx elem]
+  (.createMediaElementSource ctx elem))
+
+(defn media-stream-destination
+  [ctx in]
+  (let [dest-node (.createMediaStreamDestination ctx)]
+    (.connect in dest-node)
+    dest-node))
+
+(defn media-stream-source [ctx stream]
+  (.createMediaStreamSource ctx stream))
+
+(defn oscillator
+  [ctx type freq detune]
+  (let [osc-node (.createOscillator ctx)]
+    (set! (.-type osc-node) (clj->js type))
+    (set-param! freq (.-frequency osc-node))
+    (set-param! detune (.-detune osc-node))
+    (.start osc-node)
+    osc-node))
+
+(defn periodic-wave
+  [ctx real imag]
+  (.createPeriodicWave ctx real imag))
+
+(defn stereo-panner
+  [ctx in pan]
+  (let [panner-node (.createStereoPanner ctx)]
+    (set-param! (.-pan panner-node) pan)
+    (.connect in panner-node)
+    panner-node))
+
+(defn waveshaper
+  [ctx in curve]
+  (let [waveshaper-node (.createWaveShaper ctx)]
+    (set! (.-curve waveshaper-node) curve)
+    (.connect in waveshaper-node)
+    waveshaper-node))
+
+
+(defn buffer-source
+  [ctx buffer detune loop]
+  (let [source-node (.createBufferSource ctx)]
+    (set! (.-buffer source-node) buffer)
+    (.start source-node)
+    source-node))
+
+;;; NOT CORE
+
+(defn mix
+  "Combines the input AudioNodes to a "
+  [& ins]
+  (let [])
+  )
+
+(defn fb
+  "f is a function that takes audio"
+  [ctx in f]
+  (let [gain-node (.createGain ctx)]
+    (.connect in gain-node)
+    (.connect (f gain-node) gain-node)
     gain-node))

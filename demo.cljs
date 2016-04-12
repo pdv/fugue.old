@@ -1,23 +1,112 @@
 (ns fugue.demo
-  (:require [fugue.audio.osc :refer [sin-osc saw]]
-            [fugue.audio.mix :refer [gain]]
-            [fugue.audio.filter :refer [lpf]]
-            [fugue.audio.io :as io]
-            [fugue.transport :refer [stop]]
-            [fugue.envelope :refer [adsr perc env-gen]]
-            [fugue.midi :refer [midi-init! printer
-                                midi-in midi-out
-                                midi-in-devices midi-out-devices]]
-            [cljs.core.async :refer [pipe]]))
+  (:require [fugue.audio :refer [sin-osc saw lpf out init-audio!]]))
+
+(init-audio!)
+
+;;;
+;;; Variations on a theme
+;;; pdv
+;;;
+
+(defn out [output]
+  (out (gain output 0.5)))
 
 
-;; MIDI Demo
+;;;;;;;;;;;;;;;;;;;;;; 1
 
-(midi-init!)
+(out (sin-osc 440))
+;;=> 1
 
-(printer (midi-in "Launchpad"))
+(kill)
 
-(pipe (midi-in "Launchpad") (midi-out "Launchpad"))
+;;;;;;;;;;;;;;;;;;;;;; 2
+
+(out (sin-osc 440))
+;;=> 1
+(kill)
+
+(out (sin-osc 880))
+;;=> 1
+(kill)
+
+(out (sin-osc 220))
+;;=> 1
+(kill)
+
+;;;;;;;;;;;;;;;;;;;;;; 3
+
+(out (mix (sin-osc 440) (sin-osc 441)))
+;;=> 1
+(kill)
+
+(out (sin-osc [440 441]))
+;;=> 1
+(kill)
+
+;; The above translates to
+;; (out [(sin 440) (sin 441)])
+;; (apply f args) unfolds args
+
+(out (apply mix (sin-osc [440 441])))
+
+;;;;;;;;;;;;;;;;;;;;;; 4
+
+(out (gain (sin-osc 440) (env-gen (perc 0.3 0.5))))
+
+(defn ding! [freq]
+  (gain (sin-osc freq) (env-gen (perc 0.3 0.5))))
+
+(out (ding! 440))
+
+;;;;;;;;;;;;;;;;;;;;;; 5
+
+(out (saw 440))
+
+(out (lpf (saw 440) 600))
+
+(-> (saw 440)
+    (lpf 600)
+    out)
+
+;;;;;;;;;;;;;;;;;;;;;; 6
+
+(defn pluck! [freq]
+  (let [env (env-gen (perc 0.05 0.3))
+        osc (saw freq)])
+  (-> osc
+      (lpf env)
+      (gain env)
+      out))
+
+(pluck! 640)
+
+;;;;;;;;;;;;;;;;;;;;;; 7
+;; MONOPHONY
+
+(defn minimoog [midi-note]
+  (let [freq (:midi))
+        velocity (:velocity midi)
+        env (env-gen (adsr 0.05 0.3 0.8 0.1) velocity)]
+    (-> (saw freq)
+        (lpf env)
+        (gain env)
+        out)))
+
+(minimoog {:note 60 :velocity 0.8})
+(kill)
+
+(minimoog (midi-in "Launchpad" :note))
+
+
+;;;;;;;;;;;;;;;;;;;;;; 8
+;; POLYPHONY
+
+
+(defn polymoog [note velogate]
+  )
+
+
+
 
 
 ;; Env demo
@@ -64,7 +153,7 @@
       sin-osc
       (lpf 200)
       amp ()))
-      amp))
+      amp
       (env-gen (adsr 0.3 1.2 0.5 ))
       (lpf 200)
 

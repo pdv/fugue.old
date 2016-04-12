@@ -11,6 +11,8 @@
    :times [a r]
    :release 2})
 
+(comment
+
 (defn- apply-env [levels times n param gate]
   (engine/cancel-scheduled-values! param)
   (let [slice (partial (if (> gate 0) take drop) n)
@@ -29,3 +31,5 @@
        (engine/set-param! param (first levels))
        (applicator param @gate)
        (add-watch gate :gate #(applicator param %4))))))
+
+)

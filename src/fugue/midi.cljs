@@ -2,6 +2,7 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.core.async :refer [chan >!]]))
 
+
 (defonce midi-ins (atom {}))
 (defonce midi-outs (atom {}))
 
@@ -74,22 +75,3 @@
   "Initializes midi io"
   (.. (.requestMIDIAccess js/navigator)
       (then reset-ports!)))
-
-(comment
-(defn midi-inst
-  "Returns an instrument ()"
-  [f]
-  (fn [midi-in]
-    (go
-      (loop [gates {}
-             msg (<! midi-in)]
-        (if (= (:type msg) :note-on)
-          (let [gate (atom 1)]
-            )
-          )
-      (while true
-          (let [msg (<! in)]
-            (if (= (:type msg) :note-on)
-              ())
-          ()(<! in))))
-))))

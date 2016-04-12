@@ -1,6 +1,6 @@
 .DS_Store
 out
-
+*.psd
 .*
 /target
 /classes
