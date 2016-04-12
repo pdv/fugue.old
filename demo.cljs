@@ -1,20 +1,27 @@
 (ns fugue.demo
-  (:require [fugue.audio :refer [sin-osc saw lpf out init-audio!]]))
+  (:require [fugue.audio :refer [sin-osc saw gain lpf out init-audio! env-gen adsr perc]]
+            [fugue.engine :refer [fb sig-delay]]
+            [cljs.core.async :as async]))
 
 (init-audio!)
+
+(out (fb (sin-osc 440) #(sig-delay % 0.4)))
+
+(def c (chan))
+
+(out (gain (sin-osc 440) (env-gen (perc ))))
 
 ;;;
 ;;; Variations on a theme
 ;;; pdv
 ;;;
 
-(defn out [output]
-  (out (gain output 0.5)))
-
+(defn demo [in]
+  (out (gain in 0.5)))
 
 ;;;;;;;;;;;;;;;;;;;;;; 1
 
-(out (sin-osc 440))
+(demo (sin-osc 440))
 ;;=> 1
 
 (kill)

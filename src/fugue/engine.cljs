@@ -1,7 +1,9 @@
 (ns fugue.engine
-  (:require-macros [cljs.core.async.macros :refer [go-loop]])
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.core.async :as async :refer [<!]]))
 
+
+;; AudioContext
 
 (defn make-ctx [] (js/AudioContext.))
 
@@ -27,15 +29,6 @@
 (def audio? (partial instance? js/AudioNode))
 
 
-;; Buffers and samples
-
-(defn decode-audio [ctx data]
-  (.decodeAudioData ctx data))
-
-(defn audio-buffer
-  [ctx channels length sample-rate]
-  (.createBuffer ctx channels length sample-rate))
-
 
 ;; Parameters and modulation
 
@@ -48,11 +41,10 @@
   (set-param! [n param] (set! (.-value param) n))
   cljs.core.async.impl.channels.ManyToManyChannel
   (set-param! [c param]
-    (go-loop []
+    (go (while true
       (let [x (<! c)]
-        (set-param! param x)))))
+        (set-param! param x))))))
 
-(comment
 (defn schedule-value!
   "Ramps the parameter to the value at the given time from now"
   [param value time]
@@ -62,26 +54,56 @@
 
 (defn cancel-scheduled-values!
   "Cancels scheduled values but maintains the current value"
-  [param]
+  [ctx param]
   (let [current (.-value param)]
-    (.cancelScheduledValues param (now))
-    (.setValueAtTime param current (now))
-    (schedule-value! param current (now))))
+    (.cancelScheduledValues param (now ctx))
+    (.setValueAtTime param current (now ctx))
+    (schedule-value! param current (now ctx))))
 
 
-(defrecord EnvGen [env gate scale bias]
+(defn- apply-env [ctx levels times param]
+  (println levels)
+  (cancel-scheduled-values! ctx param)
+  (let [times (map #(+ (now ctx) %) (reductions + times))]
+    (js/console.log (clj->js times))
+    (js/console.log (now ctx))
+    (dorun (map #(schedule-value! param %1 %2) levels times))))
+
+
+(defrecord EnvGen [ctx env gate]
   Modulator
   (set-param! [this param]
-    (go-loop []
+    (set-param! 0 param)
+    (go (while true
       (let [g (<! gate)]
-        ()))))
-)
+        (if (> g 0)
+          (apply-env ctx
+                     (map (partial * g) (:on-levels env))
+                     (:on-times env)
+                     param)
+          (apply-env ctx
+                     (:off-levels env)
+                     (:off-times env)
+                     param)))))))
 
 (defrecord CV [value node]
   Modulator
   (set-param! [this param]
     (set-param! value param)
     (.connect node param)))
+
+
+
+;; Buffers and samples
+
+(defn decode-audio [ctx data]
+  (.decodeAudioData ctx data))
+
+(defn audio-buffer
+  [ctx channels length sample-rate]
+  (.createBuffer ctx channels length sample-rate))
+
+
 
 ;;; AnalyserNode methods
 
@@ -179,7 +201,6 @@
     (.connect in waveshaper-node)
     waveshaper-node))
 
-
 (defn buffer-source
   [ctx buffer detune loop]
   (let [source-node (.createBufferSource ctx)]
@@ -190,10 +211,12 @@
 ;;; NOT CORE
 
 (defn mix
-  "Combines the input AudioNodes to a "
-  [& ins]
-  (let [])
-  )
+  "Combines the input AudioNodes into a GainNode"
+  [ctx & ins]
+  (let [mixed (.createGain ctx)]
+    (doseq [in ins]
+      (.connect in mixed))
+    mixed))
 
 (defn fb
   "f is a function that takes audio"

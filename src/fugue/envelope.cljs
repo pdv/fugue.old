@@ -11,6 +11,13 @@
    :times [a r]
    :release 2})
 
+(defn adsr [a d s r]
+  {:on-levels [1 s]
+   :on-times [a d]
+   :off-levels [0]
+   :off-times [r]})
+
+
 (comment
 
 (defn- apply-env [levels times n param gate]

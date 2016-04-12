@@ -12,7 +12,8 @@
   (init-audio!))
 
 (defn out [in]
-  (engine/out @ctx in))
+  (engine/out @ctx in)
+  in)
 
 ;;; ugens
 
@@ -60,6 +61,29 @@
   ([in freq] (lpf in freq 1))
   ([in freq q]
    (engine/biquad-filter @ctx in :bandpass freq q)))
+
+(defn mix
+  "Combines the inputs into one signal"
+  [& args]
+  (engine/mix @ctx args))
+
+
+;;; Env-gen
+
+(defn adsr [a d s r]
+  {:on-levels [1 s]
+   :on-times [a d]
+   :off-levels [0]
+   :off-times [r]})
+
+(defn perc [a r]
+  {:on-levels [1 0]
+   :on-times [a r]})
+
+(defn env-gen [env gate]
+  (engine/EnvGen. @ctx env gate))
+
+
 
 (comment
   ;; FX
