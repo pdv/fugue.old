@@ -7,9 +7,15 @@
 
 (out (fb (sin-osc 440) #(sig-delay % 0.4)))
 
-(def c (chan))
+(def c (async/chan))
 
-(out (gain (sin-osc 440) (env-gen (perc ))))
+(out (gain (sin-osc 440) (env-gen (perc 0.5 0.5) c)))
+
+(async/put! c 1)  
+(perc 0.5 0.5)
+(map (partial * 1) (:on-levels (perc 0.5 0.5)))
+
+
 
 ;;;
 ;;; Variations on a theme
@@ -80,7 +86,7 @@
 (defn pluck! [freq]
   (let [env (env-gen (perc 0.05 0.3))
         osc (saw freq)])
-  (-> osc
+  (-> sin-osc
       (lpf env)
       (gain env)
       out))

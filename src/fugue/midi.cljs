@@ -22,6 +22,14 @@
   [in]
   (go (while true (.log js/console (clj->js (<! in))))))
 
+
+(defn midi->cv
+  "Takes a midi channel and returns a map of individual
+   channels (gate, velocity, frequency)"
+  [midi-chan]
+  ())
+
+
 (def msg-type
   {144 :note-on
    128 :note-off

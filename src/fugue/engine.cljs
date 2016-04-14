@@ -7,7 +7,7 @@
 
 (defn make-ctx [] (js/AudioContext.))
 
-(defn now [ctx]
+(defn current-time [ctx]
   (.-currentTime ctx))
 
 (defn sample-rate [ctx]
@@ -29,72 +29,85 @@
 (def audio? (partial instance? js/AudioNode))
 
 
-
-;; Parameters and modulation
+;;; AudioParam
 
 (defprotocol Modulator
   "A protocol for controlling AudioParams"
-  (set-param! [param modulator]))
+  (attach [this ctx param]))
 
 (extend-protocol Modulator
   number
-  (set-param! [n param] (set! (.-value param) n))
-  cljs.core.async.impl.channels.ManyToManyChannel
-  (set-param! [c param]
-    (go (while true
-      (let [x (<! c)]
-        (set-param! param x))))))
+  (attach [n ctx param] (set! (.-value param) n)))
+
 
 (defn schedule-value!
-  "Ramps the parameter to the value at the given time from now"
+  "Ramps the parameter to the value at the given time."
   [param value time]
   (if (= value 0)
-    (.exponentialRampToValueAtTime param 0.00001 time)
+    (do ; You can't exponential ramp to 0
+      (.exponentialRampToValueAtTime param 0.00001 time)
+      (.setValueAtTime param 0 time))
     (.exponentialRampToValueAtTime param value time)))
 
 (defn cancel-scheduled-values!
   "Cancels scheduled values but maintains the current value"
-  [ctx param]
+  [param time]
   (let [current (.-value param)]
-    (.cancelScheduledValues param (now ctx))
-    (.setValueAtTime param current (now ctx))
-    (schedule-value! param current (now ctx))))
+    (.cancelScheduledValues param time)
+    (.setValueAtTime param current time)
+    (schedule-value! param current time))) ; is this line needed?
 
+;; core.async.impl.channels/ManyToManyChannel
+(def chan-type (type (async/chan)))
 
-(defn- apply-env [ctx levels times param]
-  (println levels)
-  (cancel-scheduled-values! ctx param)
-  (let [times (map #(+ (now ctx) %) (reductions + times))]
-    (js/console.log (clj->js times))
-    (js/console.log (now ctx))
-    (dorun (map #(schedule-value! param %1 %2) levels times))))
-
-
-(defrecord EnvGen [ctx env gate]
+(extend-type chan-type
   Modulator
-  (set-param! [this param]
-    (set-param! 0 param)
-    (go (while true
-      (let [g (<! gate)]
-        (if (> g 0)
-          (apply-env ctx
-                     (map (partial * g) (:on-levels env))
-                     (:on-times env)
-                     param)
-          (apply-env ctx
-                     (:off-levels env)
-                     (:off-times env)
-                     param)))))))
-
-(defrecord CV [value node]
-  Modulator
-  (set-param! [this param]
-    (set-param! value param)
-    (.connect node param)))
+  (attach [ch ctx param]
+    (cancel-scheduled-values! param (current-time ctx))
+    (go (loop [previous (current-time ctx)]
+      (let [{:keys [time value]} (<! ch)]
+        (if (= time :now)
+          (do ; cannot set directly or future scheduling will not work
+            (cancel-scheduled-values! param (current-time ctx)) ; is this necessary?
+            (if value (schedule-value! param value (current-time ctx)))
+            (recur (current-time ctx)))
+          (let [end-time (+ previous time)]
+            (schedule-value! param value end-time)
+            (recur end-time))))))))
 
 
 
-;; Buffers and samples
+;; (defn- apply-env [ctx levels times param]
+;;   (cancel-scheduled-values! ctx param)
+;;   (let [times (map #(+ (now ctx) %) (reductions + times))]
+;;     (dorun (map #(schedule-value! param %1 %2) levels times))))
+
+
+;; (defrecord EnvGen [ctx env gate]
+;;   Modulator
+;;   (attach [this param]
+;;     (attach 0 param)
+;;     (go (while true
+;;       (let [g (<! gate)]
+;;         (if (> g 0)
+;;           (apply-env ctx
+;;                      (map (partial * g) (:on-levels env))
+;;                      (:on-times env)
+;;                      param)
+;;           (apply-env ctx
+;;                      (:off-levels env)
+;;                      (:off-times env)
+;;                      param)))))))
+
+;; (defrecord CV [value node]
+;;   Modulator
+;;   (attach [this param]
+;;     (attach value param)
+;;     (.connect node param)))
+
+
+
+;;; AudioBuffer
 
 (defn decode-audio [ctx data]
   (.decodeAudioData ctx data))
@@ -113,7 +126,7 @@
 (defn byte-time-domain-data [analyser] (.getByteTimeDomainData analyser))
 
 
-;;; AudioNode wrappers
+;;; AudioNode
 
 (defn analyser
   [ctx in]
@@ -122,13 +135,13 @@
     analyser-node))
 
 (defn biquad-filter
-  [ctx in type freq q]
-  (let [filter-node (.createBiquadFilter ctx)]
-    (set! (.-type filter-node) (clj->js type))
-    (set-param! freq (.-frequency filter-node))
-    (set-param! q (.-Q filter-node))
-    (.connect in filter-node)
-    filter-node))
+  ([ctx in type freq q]
+   (let [filter-node (.createBiquadFilter ctx)]
+     (set! (.-type filter-node) (clj->js type))
+     (attach freq ctx (.-frequency filter-node))
+     (attach q ctx (.-Q filter-node))
+     (.connect in filter-node)
+     filter-node)))
 
 (defn convolver
   [ctx in buffer normalize]
@@ -140,25 +153,25 @@
 (defn sig-delay
   [ctx in time]
   (let [delay-node (.createDelay ctx 5)]
-    (set-param! time (.-delayTime delay-node))
+    (attach time ctx (.-delayTime delay-node))
     (.connect in delay-node)
     delay-node))
 
 (defn compressor
   [ctx in threshold knee ratio reduction attack release]
   (let [compressor-node (.createDynamicsCompressor ctx)]
-    (set-param! threshold (.-threshold compressor-node))
-    (set-param! knee (.-knee compressor-node))
-    (set-param! ratio (.-ratio compressor-node))
+    (attach threshold ctx (.-threshold compressor-node))
+    (attach knee ctx (.-knee compressor-node))
+    (attach ratio ctx (.-ratio compressor-node))
     (set! (.-reduction compressor-node) reduction)
-    (set-param! attack (.-attack compressor-node))
-    (set-param! release (.-release compressor-node))
+    (attach attack ctx (.-attack compressor-node))
+    (attach release ctx (.-release compressor-node))
     compressor-node))
 
 (defn gain
   [ctx in amount]
   (let [gain-node (.createGain ctx)]
-    (set-param! amount (.-gain gain-node))
+    (attach amount ctx (.-gain gain-node))
     (.connect in gain-node)
     gain-node))
 
@@ -178,8 +191,8 @@
   [ctx type freq detune]
   (let [osc-node (.createOscillator ctx)]
     (set! (.-type osc-node) (clj->js type))
-    (set-param! freq (.-frequency osc-node))
-    (set-param! detune (.-detune osc-node))
+    (attach freq ctx (.-frequency osc-node))
+    (attach detune ctx (.-detune osc-node))
     (.start osc-node)
     osc-node))
 
@@ -190,7 +203,7 @@
 (defn stereo-panner
   [ctx in pan]
   (let [panner-node (.createStereoPanner ctx)]
-    (set-param! (.-pan panner-node) pan)
+    (attach pan ctx (.-pan panner-node))
     (.connect in panner-node)
     panner-node))
 
@@ -207,6 +220,7 @@
     (set! (.-buffer source-node) buffer)
     (.start source-node)
     source-node))
+
 
 ;;; NOT CORE
 

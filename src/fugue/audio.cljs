@@ -1,5 +1,7 @@
 (ns fugue.audio
-  (:require [fugue.engine :as engine]))
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require [cljs.core.async :as async]
+            [fugue.engine :as engine]))
 
 (defonce ctx (atom nil))
 (defonce buffer-pool (atom {}))
@@ -15,13 +17,21 @@
   (engine/out @ctx in)
   in)
 
-;;; ugens
+
+;;; Mix
 
 (defn gain
   "Multiplies the amplitude of in by amp"
   [in amp]
   (engine/gain @ctx in amp))
 
+(defn mix
+  "Combines the inputs into one signal"
+  [& args]
+  (engine/mix @ctx args))
+
+
+;;; Oscillators
 
 (defn sin-osc
   "Starts a sine wave oscillator at the given frequency"
@@ -44,6 +54,8 @@
   (engine/oscillator @ctx :triangle freq 0))
 
 
+;;; Filters
+
 (defn lpf
   "Applies a low-pass filter to the input"
   ([in freq] (lpf in freq 1))
@@ -62,27 +74,32 @@
   ([in freq q]
    (engine/biquad-filter @ctx in :bandpass freq q)))
 
-(defn mix
-  "Combines the inputs into one signal"
-  [& args]
-  (engine/mix @ctx args))
-
 
 ;;; Env-gen
 
 (defn adsr [a d s r]
-  {:on-levels [1 s]
-   :on-times [a d]
-   :off-levels [0]
-   :off-times [r]})
+  {:on [{:value 1
+         :time a}
+        {:value s
+         :time d}]
+   :off [{:value 0
+          :time r}]})
 
 (defn perc [a r]
   {:on-levels [1 0]
    :on-times [a r]})
 
 (defn env-gen [env gate]
-  (engine/EnvGen. @ctx env gate))
-
+  (let [ch (async/chan)]
+    (go (while true
+      (js/console.log "In go loop")
+      (let [g (<! gate)
+            msgs (if (> g 0) (:on env) (:off env))]
+        (js/console.log "gate message received")
+        (>! ch {:value nil :time :now})
+        (doseq [msg msgs]
+          (>! ch msg)))))
+    ch))
 
 
 (comment
@@ -92,3 +109,9 @@
   flanger amount rate
 
   )
+
+(defn midi->cv [midi]
+  {:note (filter :note midi)
+   :velocity (filter :velocity midi)}
+  (out (sin-osc :note)))
+
