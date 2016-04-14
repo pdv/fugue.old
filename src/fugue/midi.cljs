@@ -18,17 +18,31 @@
 (defn midi-out-devices []
   (keys @midi-outs))
 
+
+;; MIDI Utils
+
 (defn printer
   [in]
   (go (while true (.log js/console (clj->js (<! in))))))
 
+(defn note->hz [note]
+  (* 440.0 (js/Math.pow 2.0 (/ (- note 69.0) 12.0))))
 
 (defn midi->cv
   "Takes a midi channel and returns a map of individual
-   channels (gate, velocity, frequency)"
-  [midi-chan]
-  ())
+   channels (velocity, frequency)"
+  [midi-ch]
+  (let [freq-ch (chan)
+        velo-ch (chan)]
+    (go
+      (while true
+        (let [{:keys [note velocity]} (<! midi-ch)]
+          (>! freq-ch {:value (note->hz note)})
+          (>! velo-ch (/ velocity 127.0)))))
+    {:freq freq-ch :velocity velo-ch}))
 
+
+;; Internals
 
 (def msg-type
   {144 :note-on

@@ -1,7 +1,8 @@
 (ns fugue.demo
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.core.async :as async]
-            [fugue.audio :as a]))
+            [fugue.audio :as a]
+            [fugue.midi :as m]))
 
 (defn out [in]
   (a/out (a/gain in 0.5)))
@@ -9,9 +10,18 @@
 
 (a/init-audio!)
 
+(m/midi-init!)
+
+(m/midi-in-devices)
+
+(def lp (m/midi-in "Launchpad"))
+
+(def ctrl (m/midi->cv lp))
+
+
 (def gate (async/chan))
 
-(out (a/gain (a/saw 440) (a/env-gen (a/adsr 1.5 0.5 0.5 1.5) gate)))
+(out (a/gain (a/saw 440) (a/env-gen (a/adsr 1.5 0.5 0.5 1.5) (:velocity ctrl))))
 
 
 (async/put! gate 1)

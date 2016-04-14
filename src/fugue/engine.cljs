@@ -63,6 +63,7 @@
 (extend-type chan-type
   Modulator
   (attach [ch ctx param]
+    (js/console.log "connecting")
     (set! (.-value param) 0)
     (schedule-value! param 0 0)
     (go (loop [previous (current-time ctx)]
@@ -75,36 +76,6 @@
             (cancel-scheduled-values! param 0) ; is this necessary?
             (when value (schedule-value! param value (current-time ctx)))
             (recur (current-time ctx)))))))))
-
-
-
-;; (defn- apply-env [ctx levels times param]
-;;   (cancel-scheduled-values! ctx param)
-;;   (let [times (map #(+ (now ctx) %) (reductions + times))]
-;;     (dorun (map #(schedule-value! param %1 %2) levels times))))
-
-
-;; (defrecord EnvGen [ctx env gate]
-;;   Modulator
-;;   (attach [this param]
-;;     (attach 0 param)
-;;     (go (while true
-;;       (let [g (<! gate)]
-;;         (if (> g 0)
-;;           (apply-env ctx
-;;                      (map (partial * g) (:on-levels env))
-;;                      (:on-times env)
-;;                      param)
-;;           (apply-env ctx
-;;                      (:off-levels env)
-;;                      (:off-times env)
-;;                      param)))))))
-
-;; (defrecord CV [value node]
-;;   Modulator
-;;   (attach [this param]
-;;     (attach value param)
-;;     (.connect node param)))
 
 
 
