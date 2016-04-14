@@ -43,37 +43,38 @@
 (defn schedule-value!
   "Ramps the parameter to the value at the given time."
   [param value time]
+  (js/console.log "Setting to" value "at" time)
   (if (= value 0)
     (do ; You can't exponential ramp to 0
-      (.exponentialRampToValueAtTime param 0.00001 time)
-      (.setValueAtTime param 0 time))
+      (.exponentialRampToValueAtTime param 0.00001 time))
+      ; (.setValueAtTime param 0 time))
     (.exponentialRampToValueAtTime param value time)))
 
 (defn cancel-scheduled-values!
   "Cancels scheduled values but maintains the current value"
   [param time]
-  (let [current (.-value param)]
-    (.cancelScheduledValues param time)
-    (.setValueAtTime param current time)
-    (schedule-value! param current time))) ; is this line needed?
+  (.exponentialRampToValueAtTime param (+ (.-value param) 0.0001) time))
 
 ;; core.async.impl.channels/ManyToManyChannel
 (def chan-type (type (async/chan)))
 
+;; {:time from previous (immediately if ommitted)
+;;  :value to set param to (cancel scheduled if ommitted)}
 (extend-type chan-type
   Modulator
   (attach [ch ctx param]
-    (cancel-scheduled-values! param (current-time ctx))
+    (set! (.-value param) 0)
+    (schedule-value! param 0 0)
     (go (loop [previous (current-time ctx)]
       (let [{:keys [time value]} (<! ch)]
-        (if (= time :now)
-          (do ; cannot set directly or future scheduling will not work
-            (cancel-scheduled-values! param (current-time ctx)) ; is this necessary?
-            (if value (schedule-value! param value (current-time ctx)))
-            (recur (current-time ctx)))
+        (if time
           (let [end-time (+ previous time)]
             (schedule-value! param value end-time)
-            (recur end-time))))))))
+            (recur end-time))
+          (do ; cannot set directly or future scheduling will not work
+            (cancel-scheduled-values! param 0) ; is this necessary?
+            (when value (schedule-value! param value (current-time ctx)))
+            (recur (current-time ctx)))))))))
 
 
 

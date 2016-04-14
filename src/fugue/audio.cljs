@@ -91,14 +91,14 @@
 
 (defn env-gen [env gate]
   (let [ch (async/chan)]
-    (go (while true
-      (js/console.log "In go loop")
-      (let [g (<! gate)
-            msgs (if (> g 0) (:on env) (:off env))]
-        (js/console.log "gate message received")
-        (>! ch {:value nil :time :now})
-        (doseq [msg msgs]
-          (>! ch msg)))))
+    (go
+      (while true
+        (let [g (<! gate)
+              msgs (if (> g 0) (:on env) (:off env))]
+          (js/console.log "gate message received")
+          (>! ch {})
+          (doseq [msg msgs]
+            (>! ch msg)))))
     ch))
 
 

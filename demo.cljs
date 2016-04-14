@@ -1,13 +1,45 @@
 (ns fugue.demo
-  (:require [fugue.audio :refer [sin-osc saw gain lpf out init-audio! env-gen adsr perc]]
-            [fugue.engine :refer [fb sig-delay]]
-            [cljs.core.async :as async]))
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require [cljs.core.async :as async]
+            [fugue.audio :as a]))
 
-(init-audio!)
+(defn out [in]
+  (a/out (a/gain in 0.5)))
+
+
+(a/init-audio!)
+
+(def gate (async/chan))
+
+(out (a/gain (a/saw 440) (a/env-gen (a/adsr 1.5 0.5 0.5 1.5) gate)))
+
+
+(async/put! gate 1)
+
+(async/put! gate 0)
+
+(defprotocol Foo
+  (bar [x]))
+
+
+(extend-protocol Foo
+  number
+  (bar [x]
+    "Doubles x."
+    (* 2 x)))
+
+(doc bar)
+
+(def foo {:penis 5})
+
+(:bar foo)
+(if (:bar foo) 3)
 
 (out (fb (sin-osc 440) #(sig-delay % 0.4)))
 
 (def c (async/chan))
+
+(type (async/chan))
 
 (out (gain (sin-osc 440) (env-gen (perc 0.5 0.5) c)))
 
@@ -15,6 +47,15 @@
 (perc 0.5 0.5)
 (map (partial * 1) (:on-levels (perc 0.5 0.5)))
 
+(ns fugue.demo)
+
+(defn foo
+  ([a b] (foo a b 1))
+  ([a b c] (+ a b c)))
+
+(def bar (partial foo 3))
+
+(doc bar)
 
 
 ;;;
