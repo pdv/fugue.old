@@ -24,27 +24,33 @@
         note (:note msg)
         prev (:active cvm)
         active (if (= velo 0)
-                 (filter (partial = note) prev)
+                 (filter (partial not= note) prev)
                  (conj prev note))]
     {:active active
      :freq (note->hz (last active))
      :gate (if (= 1 (count active)) velo (:gate cvm))}))
 
 (defn mono-onmsg
-  "Legato (no retrigger), last-note priority monophony"
-  [cvg msg]
-  (let [current (deref-vals cvg)
-        new (mono-update current msg)]
-    (reset-vals! cvg new)))
+  "Updates freq, gate, and active atoms based on msg"
+  [msg freq gate active]
+  (if (= :note (:type msg))
+    (let [current {:freq @freq
+                   :gate @gate
+                   :active @active}
+          new (mono-update current msg)]
+      (js/console.log (clj->js new))
+      (reset! freq (:freq new))
+      (reset! gate (:gate new))
+      (reset! active (:active new)))))
 
 (defn midi-mono
   "Returns a control voltage map of active-notes/freq/velogate atoms"
   [name]
-  (let [cvg {:active-notes (atom [])
-             :freq (atom 440)
-             :gate (atom 0)}]
-    (add-watch ins :midi-mono #(mono-onmsg cvg (%4 name)))
-    cvg))
+  (let [freq (atom 440)
+        gate (atom 0)
+        active (atom [])]
+    (add-watch ins :midi-mono #(mono-onmsg (%4 name) freq gate active))
+    {:freq freq :gate gate}))
 
 (defn midi-in
   "Returns an up-to-date map of freq and velogate atoms"
@@ -63,8 +69,8 @@
 
 
 (def msg-type
-  {144 :note-on
-   128 :note-off
+  {144 :note
+   128 :note
    224 :bend})
 
 (defn event->msg
@@ -89,6 +95,7 @@
 
 (defn- open-ports [midi-access]
   (doseq [in (maplike->seq (.-inputs midi-access))]
+    (js/console.log (.-name in))
     (listen in)))
 
 (defn init!
