@@ -27,20 +27,23 @@
                  (filter (partial not= note) prev)
                  (conj prev note))]
     {:active active
-     :freq (note->hz (last active))
-     :gate (if (= 1 (count active)) velo (:gate cvm))}))
+     :freq (note->hz (first active))
+     :gate (if (or (= 0 (count prev))
+                   (= 0 (count active)))
+             velo
+             (:gate cvm))}))
 
 (defn mono-onmsg
   "Updates freq, gate, and active atoms based on msg"
   [msg freq gate active]
   (if (= :note (:type msg))
-    (let [current {:freq @freq
-                   :gate @gate
-                   :active @active}
+    (let [current {:freq @freq :gate @gate :active @active}
           new (mono-update current msg)]
-      (js/console.log (clj->js new))
-      (reset! freq (:freq new))
-      (reset! gate (:gate new))
+      (if (and (not= (:freq new) (:freq current))
+               (not= 0 (:gate new)))
+        (reset! freq (:freq new)))
+      (if (not= (:gate new) (:gate current))
+        (reset! gate (:gate new)))
       (reset! active (:active new)))))
 
 (defn midi-mono
