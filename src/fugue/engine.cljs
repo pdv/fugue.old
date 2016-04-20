@@ -1,6 +1,6 @@
 (ns fugue.engine
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [cljs.core.async :as async :refer [<!]]))
+  (:require [cljs.core.async :refer [chan <!]]))
 
 
 ;; AudioContext
@@ -43,7 +43,6 @@
 (defn schedule-value!
   "Ramps the parameter to the value at the given time."
   [param value time]
-  (js/console.log "Setting to" value "at" time)
   (if (= value 0)
     (do ; You can't exponential ramp to 0
       (.exponentialRampToValueAtTime param 0.00001 time))
@@ -53,10 +52,11 @@
 (defn cancel-scheduled-values!
   "Cancels scheduled values but maintains the current value"
   [param time]
+  (js/console.log "Canceling")
   (.exponentialRampToValueAtTime param (+ (.-value param) 0.0001) time))
 
 ;; core.async.impl.channels/ManyToManyChannel
-(def chan-type (type (async/chan)))
+(def chan-type (type (chan)))
 
 ;; {:time from previous (immediately if ommitted)
 ;;  :value to set param to (cancel scheduled if ommitted)}
@@ -74,7 +74,9 @@
             (recur end-time))
           (do ; cannot set directly or future scheduling will not work
             (cancel-scheduled-values! param 0) ; is this necessary?
-            (when value (schedule-value! param value (current-time ctx)))
+            (when value
+              (js/console.log "Instant change to value" value)
+              (schedule-value! param value (current-time ctx)))
             (recur (current-time ctx)))))))))
 
 

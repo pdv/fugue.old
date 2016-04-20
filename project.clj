@@ -13,7 +13,7 @@
   :cljsbuild {
     :builds [{:source-paths ["src"]
               :compiler {:output-to "out/fugue.js"
-                         :optimizations :whitespace
+                         :optimizations :none
                          :pretty-print true}}]})
 
 
