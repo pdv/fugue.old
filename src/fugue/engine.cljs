@@ -1,6 +1,4 @@
-(ns fugue.engine
-  (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [cljs.core.async :refer [chan <!]]))
+(ns fugue.engine)
 
 
 ;; AudioContext
@@ -37,7 +35,10 @@
 
 (extend-protocol Modulator
   number
-  (attach [n ctx param] (set! (.-value param) n)))
+  (attach [n ctx param] (set! (.-value param) n))
+  Atom
+  (attach [a ctx param]
+    (add-watch a :modulator #(attach %4 ctx param))))
 
 
 (defn schedule-value!
@@ -55,29 +56,29 @@
   (js/console.log "Canceling")
   (.exponentialRampToValueAtTime param (+ (.-value param) 0.0001) time))
 
-;; core.async.impl.channels/ManyToManyChannel
-(def chan-type (type (chan)))
+;; ;; core.async.impl.channels/ManyToManyChannel
+;; (def chan-type (type (chan)))
 
-;; {:time from previous (immediately if ommitted)
-;;  :value to set param to (cancel scheduled if ommitted)}
-(extend-type chan-type
-  Modulator
-  (attach [ch ctx param]
-    (js/console.log "connecting")
-    (set! (.-value param) 0)
-    (schedule-value! param 0 0)
-    (go (loop [previous (current-time ctx)]
-      (let [{:keys [time value]} (<! ch)]
-        (if time
-          (let [end-time (+ previous time)]
-            (schedule-value! param value end-time)
-            (recur end-time))
-          (do ; cannot set directly or future scheduling will not work
-            (cancel-scheduled-values! param 0) ; is this necessary?
-            (when value
-              (js/console.log "Instant change to value" value)
-              (schedule-value! param value (current-time ctx)))
-            (recur (current-time ctx)))))))))
+;; ;; {:time from previous (immediately if ommitted)
+;; ;;  :value to set param to (cancel scheduled if ommitted)}
+;; (extend-type chan-type
+;;   Modulator
+;;   (attach [ch ctx param]
+;;     (js/console.log "connecting")
+;;     (set! (.-value param) 0)
+;;     (schedule-value! param 0 0)
+;;     (go (loop [previous (current-time ctx)]
+;;       (let [{:keys [time value]} (<! ch)]
+;;         (if time
+;;           (let [end-time (+ previous time)]
+;;             (schedule-value! param value end-time)
+;;             (recur end-time))
+;;           (do ; cannot set directly or future scheduling will not work
+;;             (cancel-scheduled-values! param 0) ; is this necessary?
+;;             (when value
+;;               (js/console.log "Instant change to value" value)
+;;               (schedule-value! param value (current-time ctx)))
+;;             (recur (current-time ctx)))))))))
 
 
 
@@ -200,7 +201,7 @@
 
 (defn mix
   "Combines the input AudioNodes into a GainNode"
-  [ctx & ins]
+  [ctx ins]
   (let [mixed (.createGain ctx)]
     (doseq [in ins]
       (.connect in mixed))

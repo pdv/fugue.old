@@ -1,7 +1,5 @@
 (ns fugue.audio
-  (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [cljs.core.async :as async]
-            [fugue.engine :as engine]))
+  (:require [fugue.engine :as engine]))
 
 (defonce ctx (atom nil))
 (defonce buffer-pool (atom {}))
@@ -89,29 +87,16 @@
   {:on-levels [1 0]
    :on-times [a r]})
 
-(defn env-gen [env gate]
-  (let [ch (async/chan)]
-    (go
-      (while true
-        (let [g (<! gate)
-              msgs (if (> g 0) (:on env) (:off env))]
-          (js/console.log "gate message received")
-          (>! ch {})
-          (doseq [msg msgs]
-            (>! ch msg)))))
-    ch))
 
 
-(comment
-  ;; FX
-  ring-mod
-  ping-pong? (can you do this with other audio?)
-  flanger amount rate
-
-  )
-
-(defn midi->cv [midi]
-  {:note (filter :note midi)
-   :velocity (filter :velocity midi)}
-  (out (sin-osc :note)))
-
+;; (defn env-gen [env gate]
+;;   (let [ch (async/chan)]
+;;     (go
+;;       (while true
+;;         (let [g (<! gate)
+;;               msgs (if (> g 0) (:on env) (:off env))]
+;;           (js/console.log "gate message received")
+;;           (>! ch {})
+;;           (doseq [msg msgs]
+;;             (>! ch msg)))))
+;;     ch))

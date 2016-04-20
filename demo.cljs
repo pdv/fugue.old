@@ -4,6 +4,8 @@
             [fugue.audio :as a]
             [fugue.midi :as m]))
 
+
+
 (defn out [in]
   (a/out (a/gain in 0.5)))
 
