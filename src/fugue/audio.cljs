@@ -78,16 +78,22 @@
 ;;; Env-gen
 
 (defn adsr [a d s r]
-  {:on [{:value 1
-         :time a}
-        {:value s
-         :time d}]
-   :off [{:value 0
-          :time r}]})
+  (fn [gate now]
+    (if (> gate 0)
+      [{:value gate
+        :time (+ now a)}
+       {:value (* s gate)
+        :time (+ now a d)}]
+      [{:value 0
+        :time (+ now r)}])))
 
 (defn perc [a r]
-  {:on-levels [1 0]
-   :on-times [a r]})
+  (fn [gate now]
+    (if (> gate 0)
+      [{:value gate
+        :time (+ now a)}
+       {:value 0
+        :time (+ now a r)}])))
 
 (defn env-gen [env gate]
   (engine/EnvGen. env gate))
