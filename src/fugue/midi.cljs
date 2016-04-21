@@ -7,17 +7,7 @@
 (defn note->hz [note]
   (* 440.0 (js/Math.pow 2.0 (/ (- note 69.0) 12.0))))
 
-(defn deref-vals
-  "Returns the input atom map with its values deref'd"
-  [am]
-  (into {} (for [[k a] am] [k (deref a)])))
-
-(defn reset-vals!
-  "Updates the atom map with new values"
-  [am new]
-  (for [[k v] new] (reset! (k am) v)))
-
-(defn mono-update
+(defn- update-mono
   "Updates the cv map based on the input message"
   [cvm msg]
   (let [velo (/ (:velocity msg) 127.0)
@@ -33,12 +23,12 @@
              velo
              (:gate cvm))}))
 
-(defn mono-onmsg
+(defn- mono-onmsg
   "Updates freq, gate, and active atoms based on msg"
   [msg freq gate active]
   (if (= :note (:type msg))
     (let [current {:freq @freq :gate @gate :active @active}
-          new (mono-update current msg)]
+          new (update-mono current msg)]
       (if (and (not= (:freq new) (:freq current))
                (not= 0 (:gate new)))
         (reset! freq (:freq new)))
@@ -55,8 +45,23 @@
     (add-watch ins :midi-mono #(mono-onmsg (%4 name) freq gate active))
     {:freq freq :gate gate}))
 
+
+(defn ctrl-onmsg
+  "Updates atom a if the message is a control message"
+  [msg a n]
+  (if (and (= :ctrl (:type msg))
+           (= n (:note msg)))
+    (reset! a (:velocity msg))))
+
+(defn midi-ctrl
+  "Returns an atom representing the value of the midi control"
+  [name n]
+  (let [val (atom 0)]
+    (add-watch ins :midi-ctl #(ctrl-onmsg (%4 name) val n))
+    val))
+
 (defn midi-in
-  "Returns an up-to-date map of freq and velogate atoms"
+  "DEPRECATED. Returns an up-to-date map of freq and velogate atoms"
   [name]
   (let [freq (atom 440)
         gate (atom 0)]
@@ -74,7 +79,8 @@
 (def msg-type
   {144 :note
    128 :note
-   224 :bend})
+   224 :bend
+   176 :ctrl})
 
 (defn event->msg
   "Converts a MIDIMessageEvent into a midi message"
