@@ -57,8 +57,9 @@
 (defn cancel-scheduled-values!
   "Cancels scheduled values but maintains the current value"
   [param time]
-  (js/console.log "Canceling")
-  (.exponentialRampToValueAtTime param (+ (.-value param) 0.0001) time))
+  (let [val (.-value param)]
+    (.cancelScheduledValues param 0)
+    (.exponentialRampToValueAtTime param (+ val 0.0001) time)))
 
 
 ;; env is a function that takes the current time and gate
@@ -69,8 +70,11 @@
     (set! (.-value param) 0)
     (schedule-value! param 0 0)
     (add-watch gate :gate
-               #(doseq [{:keys [value time]} (env %4 (current-time ctx))]
-                  (schedule-value! param value time)))))
+               #(do
+                  (js/console.log "Now: " (current-time ctx))
+                  (cancel-scheduled-values! param (current-time ctx))
+                  (doseq [{:keys [value time]} (env %4 (current-time ctx))]
+                    (schedule-value! param value time))))))
 
 
 ;; ;; core.async.impl.channels/ManyToManyChannel

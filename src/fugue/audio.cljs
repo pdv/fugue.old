@@ -79,6 +79,7 @@
 
 (defn adsr [a d s r]
   (fn [gate now]
+    (js/console.log "Set to" gate "at:" now)
     (if (> gate 0)
       [{:value gate
         :time (+ now a)}

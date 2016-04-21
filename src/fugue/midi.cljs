@@ -48,16 +48,16 @@
 
 (defn ctrl-onmsg
   "Updates atom a if the message is a control message"
-  [msg a n]
+  [msg a n min max]
   (if (and (= :ctrl (:type msg))
            (= n (:note msg)))
-    (reset! a (:velocity msg))))
+    (reset! a (+ min (* (- max min) (/ (:velocity msg) 127.0))))))
 
 (defn midi-ctrl
   "Returns an atom representing the value of the midi control"
-  [name n]
+  [name n min max]
   (let [val (atom 0)]
-    (add-watch ins :midi-ctl #(ctrl-onmsg (%4 name) val n))
+    (add-watch ins :midi-ctl #(ctrl-onmsg (%4 name) val n min max))
     val))
 
 (defn midi-in
