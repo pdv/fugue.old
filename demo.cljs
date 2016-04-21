@@ -5,6 +5,37 @@
             [fugue.midi :as m]))
 
 
+;; Actual demo
+
+;; Let's define a synth
+
+(defn synth [in params]
+  (let [freq (:freq in)
+        gate (:gate in)
+        env (audio/adsr 0.05 0.05 0.9 3.5)]
+    (-> (square freq)
+        (lpf (:filt-freq params) (:filt-q params))
+        (gain (audio/env-gen env gate))
+        out)))
+
+
+;; Hooking up the synth
+
+(def oxy (midi/midi-mono "Oxygen 49"))
+
+(defn oxy-ctrl [id min max]
+  (midi-ctrl "Oxygen 49" id min max))
+
+(def params {:attack (oxy-ctrl 75 0 5)
+             :decay (oxy-ctrl 72 0 5)
+             :sustain (oxy-ctrl 15 0 1)
+             :release (oxy-ctrl 78 0 5)
+             :filt-freq (oxy-ctrl 9 10 10000)
+             :filt-q (oxy-ctrl 75 0 4)})
+
+(synth oxy params)
+
+;;;;;;;;
 
 (defn out [in]
   (a/out (a/gain in 0.5)))

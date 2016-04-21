@@ -41,8 +41,9 @@
   [name]
   (let [freq (atom 440)
         gate (atom 0)
-        active (atom [])]
-    (add-watch ins :midi-mono #(mono-onmsg (%4 name) freq gate active))
+        active (atom [])
+        key (keyword (str (rand-int 2048)))]
+    (add-watch ins key #(mono-onmsg (%4 name) freq gate active))
     {:freq freq :gate gate}))
 
 
@@ -51,13 +52,16 @@
   [msg a n min max]
   (if (and (= :ctrl (:type msg))
            (= n (:note msg)))
-    (reset! a (+ min (* (- max min) (/ (:velocity msg) 127.0))))))
+    (let [new-val (+ min (* (- max min) (/ (:velocity msg) 127.0)))]
+      (js/console.log new-val)
+      (reset! a new-val))))
 
 (defn midi-ctrl
   "Returns an atom representing the value of the midi control"
   [name n min max]
-  (let [val (atom 0)]
-    (add-watch ins :midi-ctl #(ctrl-onmsg (%4 name) val n min max))
+  (let [val (atom 0)
+        key (keyword (str (rand-int 2048)))]
+    (add-watch ins key #(ctrl-onmsg (%4 name) val n min max))
     val))
 
 (defn midi-in

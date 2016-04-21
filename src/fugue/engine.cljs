@@ -71,7 +71,6 @@
     (schedule-value! param 0 0)
     (add-watch gate :gate
                #(do
-                  (js/console.log "Now: " (current-time ctx))
                   (cancel-scheduled-values! param (current-time ctx))
                   (doseq [{:keys [value time]} (env %4 (current-time ctx))]
                     (schedule-value! param value time))))))
