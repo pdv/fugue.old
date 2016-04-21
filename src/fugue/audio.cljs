@@ -89,7 +89,8 @@
   {:on-levels [1 0]
    :on-times [a r]})
 
-
+(defn env-gen [env gate]
+  (engine/EnvGen. env gate))
 
 ;; (defn env-gen [env gate]
 ;;   (let [ch (async/chan)]

@@ -60,6 +60,19 @@
   (js/console.log "Canceling")
   (.exponentialRampToValueAtTime param (+ (.-value param) 0.0001) time))
 
+
+;; env is a function that takes the current time and gate
+;; and returns a list of {:value :time} maps
+(defrecord EnvGen [env gate]
+  Modulator
+  (attach [this ctx param]
+    (set! (.-value param) 0)
+    (schedule-value! param 0 0)
+    (add-watch gate :gate
+               #(doseq [{:keys [value time]} (env %4 (current-time ctx))]
+                  (schedule-value! param value time)))))
+
+
 ;; ;; core.async.impl.channels/ManyToManyChannel
 ;; (def chan-type (type (chan)))
 
