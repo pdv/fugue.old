@@ -35,23 +35,27 @@
 
 (defn sin-osc
   "Starts a sine wave oscillator at the given frequency"
-  [freq]
-  (engine/oscillator @ctx :sine freq 0))
+  ([freq] (sin-osc freq 0))
+  ([freq detune]
+   (engine/oscillator @ctx :sine freq detune)))
 
 (defn saw
   "Starts a saw wave oscillator at the given frequency"
-  [freq]
-  (engine/oscillator @ctx :sawtooth freq 0))
+  ([freq] (saw freq 0))
+  ([freq detune]
+   (engine/oscillator @ctx :sawtooth freq detune)))
 
 (defn square
   "Starts a square wave oscillator at the given frequency"
-  [freq]
-  (engine/oscillator @ctx :square freq 0))
+  ([freq] (square freq 0))
+  ([freq detune]
+   (engine/oscillator @ctx :square freq detune)))
 
 (defn tri
   "Starts a triangle wave oscillator at the given frequency"
-  [freq]
-  (engine/oscillator @ctx :triangle freq 0))
+  ([freq] (tri freq 0))
+  ([freq detune]
+   (engine/oscillator @ctx :triangle freq detune)))
 
 
 ;;; Filters

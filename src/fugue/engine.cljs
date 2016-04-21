@@ -38,10 +38,10 @@
   (attach [n ctx param] (set! (.-value param) n))
   Atom
   (attach [a ctx param]
-    (add-watch a :modulator #(set! (.-value param) %4)))
+    (add-watch a (keyword (str (rand-int 2048))) #(set! (.-value param) %4)))
   cljs.core.PersistentArrayMap
   (attach [m ctx param]
-    (set! (.-value param) (:value m))
+    (attach (:value m) ctx param)
     (.connect (:node m) param)))
 
 
