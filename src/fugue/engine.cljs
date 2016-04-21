@@ -38,7 +38,11 @@
   (attach [n ctx param] (set! (.-value param) n))
   Atom
   (attach [a ctx param]
-    (add-watch a :modulator #(attach %4 ctx param))))
+    (add-watch a :modulator #(set! (.-value param) %4)))
+  cljs.core.PersistentArrayMap
+  (attach [m ctx param]
+    (set! (.-value param) (:value m))
+    (.connect (:node m) param)))
 
 
 (defn schedule-value!

@@ -15,6 +15,8 @@
   (engine/out @ctx in)
   in)
 
+(defn cv [value node]
+  {:value value :node node})
 
 ;;; Mix
 

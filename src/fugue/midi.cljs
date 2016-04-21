@@ -104,7 +104,6 @@
 
 (defn- open-ports [midi-access]
   (doseq [in (maplike->seq (.-inputs midi-access))]
-    (js/console.log (.-name in))
     (listen in)))
 
 (defn init!
