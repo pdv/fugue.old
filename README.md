@@ -13,13 +13,6 @@ Build on changes
 Don't use go-loop. It doesn't work right in cljs.
 (go (loop ...)) and (go (while true ...)) work fine
 
-## AudioContext methods
-createAnalyser() - GOOD ENOUGH
-createChannelMerger() - skipping until channels 
-createChannelSplitter() - skipping until channels 
-createPanner() - skipping until later
-createScriptProcessor() - later
-
 ## License
 
 Copyright © 2016 Philip Del Vecchio
