@@ -1,5 +1,7 @@
 # fugue
 
+*Deprecated*. Please see the [rewrite](https://github.com/pdv/fugue) using core.async and ConstantSourceNode.
+
 Programmable music on the web.
 
 ## Usage
